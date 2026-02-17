@@ -24,6 +24,7 @@ This folder contains example DICOM images for testing purposes.
 This data was downloaded from the following sources:
 - https://www.magnetomworld.siemens-healthineers.com/clinical-corner/protocols/dicom-images
 - https://dicom.offis.de/download/images/ddsm/
+- https://www.dicomlibrary.com/ 
 
 # Workspace Setup
 
@@ -80,7 +81,7 @@ DICOM images often come in 12-bit or 16-bit integers with varying ranges. To mak
 
 $$Pixel_{new} = \frac{(Pixel_{raw} - Pixel_{min})}{Pixel_{max}} \times 255$$
 
-  * **Multi-frame Support:** If the input is a 3D volume (Multi-frame DICOM), the node currently selects the first frame (index 0) to publish as a 2D image.
+  * **Multi-frame Support:** If the input is a 3D volume (a multi-frame DICOM), the node iterates through every frame in the sequence. Each frame is published as a distinct `sensor_msgs/Image` and `dicom_interfaces/DicomInfo` message pair. The `DicomInfo` message includes `current_frame_index` and `total_frames` to identify each slice's position within the volume.
 
 #### Metadata Extraction
 
@@ -90,6 +91,7 @@ The node populates the custom `DicomInfo` message defined in the `dicom_interfac
   * **Demographics:** `sex`, `age`
   * **Scan Details:** `modality`, `study_date`, `series_description`
   * **Technical:** `pixel_spacing` (row/col mm), `slice_thickness`
+  * **Frame Indexing:** `current_frame_index` and `total_frames` to support multi-frame volumes.
 
 ### Configuration Parameters
 
@@ -134,5 +136,3 @@ xhost +local:root
 ```bash
 ros2 run rqt_image_view rqt_image_view
 ```
-
-

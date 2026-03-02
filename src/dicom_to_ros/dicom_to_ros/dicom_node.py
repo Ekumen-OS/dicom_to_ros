@@ -330,11 +330,11 @@ class DicomImagePublisher(Node):
             self.get_logger().info(
                 f"Published {num_frames} 2D Image & Info messages."
             )
-            return 0x0000
+            return 0x0000  # Success
 
         except Exception as e:
             self.get_logger().error(f"Processing Error: {e}")
-            return 0xC001
+            return 0xC001  # Processing failure
 
 
 def main(args=None):

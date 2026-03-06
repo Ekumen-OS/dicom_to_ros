@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y \
     ros-humble-sensor-msgs-py \
     ros-humble-rqt-image-view \ 
     ros-humble-rqt-graph \
+    ros-humble-rviz2 \
+    ros-humble-rviz-common \
+    ros-humble-rviz-default-plugins \
     net-tools \
     iputils-ping \
     x11-apps \

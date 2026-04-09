@@ -1,4 +1,6 @@
 from setuptools import setup
+import os
+from glob import glob
 
 package_name = "dicom_to_ros"
 
@@ -14,6 +16,10 @@ setup(
         ),
         # Include our package.xml file
         ("share/" + package_name, ["package.xml"]),
+        (
+            os.path.join("share", package_name, "launch"),
+            glob(os.path.join("launch", "*launch.[pxy][yma]*")),
+        ),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -24,7 +30,12 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "dicom_listener = dicom_to_ros.dicom_node:main",
+            "dicom_server = dicom_to_ros.dicom_server:main",
+            "dicom2img = dicom_to_ros.dicom_2_img:main",
+            "dicom2studyinfo = dicom_to_ros.dicom_2_study_info:main",
+            "dicom2video = dicom_to_ros.dicom_2_video:main",
+            "dicom2pcl = dicom_to_ros.dicom_2_pcl:main",
+            "dicom2tf = dicom_to_ros.dicom_2_tf:main",
         ],
     },
 )

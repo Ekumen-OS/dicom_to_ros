@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Install Python Dependencies for DICOM
-RUN pip install pydicom pynetdicom "numpy<2" opencv-python-headless gdcm pylibjpeg pyjpegls
+RUN pip install pydicom pynetdicom "numpy<2" opencv-python-headless gdcm pylibjpeg pyjpegls scipy
 
 # 3. Setup Workspace
 WORKDIR /ros2_ws

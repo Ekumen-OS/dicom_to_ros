@@ -1,0 +1,9 @@
+std_msgs/Header header
+string patient_id
+string patient_name
+string sex
+string age
+string modality
+string study_date
+string series_description
+string sop_instance_uid

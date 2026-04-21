@@ -1,5 +1,3 @@
-import io
-import pydicom
 import rclpy
 from rclpy.node import Node
 from dicom_interfaces.msg import Dicom, StudyInfo
@@ -32,18 +30,16 @@ class Dicom2StudyInfoNode(Node):
             msg (Dicom): The incoming DICOM message containing the raw DICOM
                 file data.
         """
-        ds = pydicom.dcmread(io.BytesIO(bytes(msg.dicom_data)))
-
         info = StudyInfo()
         info.header = msg.header
-        info.patient_id = str(ds.get("PatientID", "Unknown"))
-        info.patient_name = str(ds.get("PatientName", "Unknown"))
-        info.sex = str(ds.get("PatientSex", "Unknown"))
-        info.age = str(ds.get("PatientAge", "Unknown"))
-        info.modality = str(ds.get("Modality", "Unknown"))
-        info.study_date = str(ds.get("StudyDate", "Unknown"))
-        info.series_description = str(ds.get("SeriesDescription", "Unknown"))
-        info.sop_instance_uid = str(ds.get("SOPInstanceUID", "Unknown"))
+        info.patient_id = msg.patient_id
+        info.patient_name = msg.patient_name
+        info.sex = msg.sex
+        info.age = msg.age
+        info.modality = msg.modality
+        info.study_date = msg.study_date
+        info.series_description = msg.series_description
+        info.sop_instance_uid = msg.sop_instance_uid
 
         self.pub.publish(info)
         self.get_logger().info("Published StudyInfo")

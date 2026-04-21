@@ -22,7 +22,6 @@ from sensor_msgs.msg import Image, CameraInfo
 from dicom_interfaces.msg import Dicom
 from dicom_to_ros.dicom_utils import (
     prepare_pixel_data,
-    extract_geometry,
     generate_camera_info,
 )
 
@@ -60,14 +59,15 @@ class Dicom2ImgNode(Node):
         Args:
             msg (Dicom): The incoming DICOM message.
         """
-        ds = pydicom.dcmread(io.BytesIO(bytes(msg.dicom_data)))
-        volume, is_multiframe = prepare_pixel_data(ds)
+        volume, is_multiframe = prepare_pixel_data(
+            msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype
+        )
 
         # Only process single images
         if is_multiframe or volume.shape[0] > 1:
             return
 
-        spacing, _ = extract_geometry(ds)
+        spacing = msg.pixel_spacing
         img_2d = volume[0].astype(np.float32)
 
         # Normalize

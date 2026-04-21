@@ -53,20 +53,16 @@ class Dicom2TFNode(Node):
         Args:
             msg (Dicom): The incoming DICOM message.
         """
-        ds = pydicom.dcmread(io.BytesIO(bytes(msg.dicom_data)))
-
         # Translation in mm (convert to meters for ROS)
-        pos = ds.get("ImagePositionPatient", [0.0, 0.0, 0.0])
         x_m, y_m, z_m = (
-            float(pos[0]) / 1000.0,
-            float(pos[1]) / 1000.0,
-            float(pos[2]) / 1000.0,
+            msg.image_position[0] / 1000.0,
+            msg.image_position[1] / 1000.0,
+            msg.image_position[2] / 1000.0,
         )
 
         # Rotation
-        ori = ds.get("ImageOrientationPatient", [1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
-        row = np.array([float(x) for x in ori[0:3]])
-        col = np.array([float(x) for x in ori[3:6]])
+        row = np.array(msg.image_orientation[0:3])
+        col = np.array(msg.image_orientation[3:6])
         normal = np.cross(row, col)
 
         # Create rotation matrix [3x3] and get quaternion

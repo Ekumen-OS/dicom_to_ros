@@ -20,10 +20,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from dicom_interfaces.msg import Dicom
-from dicom_to_ros.dicom_utils import (
-    prepare_pixel_data,
-    extract_geometry,
-)
+from dicom_to_ros.dicom_utils import prepare_pixel_data
 
 
 class Dicom2PCLNode(Node):
@@ -56,10 +53,10 @@ class Dicom2PCLNode(Node):
         Args:
             msg (Dicom): The incoming DICOM message.
         """
-        ds = pydicom.dcmread(io.BytesIO(bytes(msg.dicom_data)))
-        volume, _ = prepare_pixel_data(ds)
+        volume, _ = prepare_pixel_data(msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype)
         volume = volume.astype(np.float32)
-        spacing, thickness = extract_geometry(ds)
+        spacing = msg.pixel_spacing
+        thickness = msg.slice_thickness
 
         min_val, max_val = np.min(volume), np.max(volume)
         if max_val > min_val:

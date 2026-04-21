@@ -54,8 +54,8 @@ class DicomServerNode(Node):
         Event handler for the pynetdicom `EVT_C_STORE` event.
 
         This is triggered when a C-STORE request is received from a peer. The
-        function processes the incoming DICOM dataset, serializes it into bytes,
-        wraps it in a ROS `Dicom` message, and publishes it.
+        function processes the incoming DICOM dataset, extracts metadata and
+        pixel data, wraps them in a ROS `Dicom` message, and publishes it.
 
         Args:
             event (pynetdicom.events.Event): The event instance containing the
@@ -69,16 +69,32 @@ class DicomServerNode(Node):
             ds = event.dataset
             ds.file_meta = event.file_meta
 
-            # Using save_as is the safest way to serialize network datasets
-            with io.BytesIO() as buffer:
-                ds.save_as(buffer, write_like_original=False)
-                dicom_bytes = buffer.getvalue()
+            pixel_spacing = ds.get("PixelSpacing", [1.0, 1.0])
+            slice_thickness = float(ds.get("SliceThickness", 1.0))
+            image_position = ds.get("ImagePositionPatient", [0.0, 0.0, 0.0])
+            image_orientation = ds.get(
+                "ImageOrientationPatient", [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+            )
 
             msg = Dicom()
             msg.header.stamp = self.get_clock().now().to_msg()
             msg.header.frame_id = "dicom_optical_frame"
             msg.sop_instance_uid = str(ds.get("SOPInstanceUID", "Unknown"))
-            msg.dicom_data = dicom_bytes
+            msg.modality = str(ds.get("Modality", "Unknown"))
+            msg.patient_id = str(ds.get("PatientID", "Unknown"))
+            msg.patient_name = str(ds.get("PatientName", "Unknown"))
+            msg.sex = str(ds.get("PatientSex", "Unknown"))
+            msg.age = str(ds.get("PatientAge", "Unknown"))
+            msg.study_date = str(ds.get("StudyDate", "Unknown"))
+            msg.series_description = str(ds.get("SeriesDescription", "Unknown"))
+            msg.pixel_spacing = [float(x) for x in pixel_spacing]
+            msg.slice_thickness = slice_thickness
+            msg.image_position = [float(x) for x in image_position]
+            msg.image_orientation = [float(x) for x in image_orientation]
+            msg.rows = int(ds.Rows)
+            msg.columns = int(ds.Columns)
+            msg.pixel_dtype = ds.pixel_array.dtype.name
+            msg.pixel_data = list(ds.PixelData)
 
             self.pub.publish(msg)
             self.get_logger().info(

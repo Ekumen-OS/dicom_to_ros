@@ -2,6 +2,76 @@ import numpy as np
 from sensor_msgs.msg import CameraInfo
 
 
+def extract_geometry(ds):
+    """
+    Robustly finds PixelSpacing and SliceThickness.
+
+    This function attempts to extract geometric information from a pydicom dataset,
+    checking standard tags as well as enhanced DICOM tags found in functional groups.
+
+    It checks in the following order:
+    1. Top-level standard tags (`PixelSpacing`, `SliceThickness`).
+    2. Shared Functional Groups Sequence (for enhanced DICOM).
+    3. Per-Frame Functional Groups Sequence (for enhanced DICOM, using frame 0).
+
+    Args:
+        ds (pydicom.dataset.Dataset): The DICOM dataset to process.
+
+    Returns:
+        tuple[list[float], float]: A tuple containing the pixel spacing
+        (as a list of two floats [row, col]) and the slice thickness (as a float).
+    """
+    pixel_spacing = None
+    slice_thickness = None
+
+    def check_pixel_measures(sequence_item):
+        ps = None
+        st = None
+        if "PixelMeasuresSequence" in sequence_item:
+            measures = sequence_item.PixelMeasuresSequence[0]
+            ps = measures.get("PixelSpacing", None)
+            st = measures.get("SliceThickness", None)
+        return ps, st
+
+    # Standard Tags
+    pixel_spacing = ds.get("PixelSpacing", None)
+    slice_thickness = ds.get("SliceThickness", None)
+
+    # Shared Functional Groups (Global)
+    if pixel_spacing is None and "SharedFunctionalGroupsSequence" in ds:
+        try:
+            pixel_spacing, st_temp = check_pixel_measures(
+                ds.SharedFunctionalGroupsSequence[0]
+            )
+            if slice_thickness is None:
+                slice_thickness = st_temp
+        except (AttributeError, IndexError):
+            pass
+
+    # Per-Frame Functional Groups
+    if pixel_spacing is None and "PerFrameFunctionalGroupsSequence" in ds:
+        try:
+            pixel_spacing, st_temp = check_pixel_measures(
+                ds.PerFrameFunctionalGroupsSequence[0]
+            )
+            if slice_thickness is None:
+                slice_thickness = st_temp
+        except (AttributeError, IndexError):
+            pass
+
+    # Prevent 0.0 crash
+    if pixel_spacing is None:
+        pixel_spacing = [1.0, 1.0]  # Default to 1mm
+
+    if slice_thickness is None:
+        slice_thickness = 1.0  # Default to 1mm
+
+    # Cast to float for ROS messages
+    pixel_spacing = [float(x) for x in pixel_spacing]
+    slice_thickness = float(slice_thickness)
+
+    return pixel_spacing, slice_thickness
+
 def prepare_pixel_data(pixel_data: bytes, rows: int, columns: int, pixel_dtype: str):
     """
     Prepare pixel data from a Dicom message for processing.

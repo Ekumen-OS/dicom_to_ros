@@ -18,6 +18,7 @@ from rclpy.node import Node
 from pynetdicom import AE, evt, ALL_TRANSFER_SYNTAXES
 from pynetdicom.presentation import AllStoragePresentationContexts
 from dicom_interfaces.msg import Dicom
+from dicom_to_ros.dicom_utils import extract_geometry
 
 
 class DicomServerNode(Node):
@@ -69,8 +70,10 @@ class DicomServerNode(Node):
             ds = event.dataset
             ds.file_meta = event.file_meta
 
-            pixel_spacing = ds.get("PixelSpacing", [1.0, 1.0])
-            slice_thickness = float(ds.get("SliceThickness", 1.0))
+            pixel_spacing, slice_thickness = extract_geometry(ds)
+
+            # pixel_spacing = ds.get("PixelSpacing", [1.0, 1.0])
+            # slice_thickness = float(ds.get("SliceThickness", 1.0))
             image_position = ds.get("ImagePositionPatient", [0.0, 0.0, 0.0])
             image_orientation = ds.get(
                 "ImageOrientationPatient", [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]

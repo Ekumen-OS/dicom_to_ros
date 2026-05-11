@@ -67,7 +67,7 @@ class Dicom2PCLNode(Node):
         threshold = 20.0
         z_indices, y_indices, x_indices = np.where(volume > threshold)
         intensities = volume[z_indices, y_indices, x_indices]
-
+   
         spacing_x, spacing_y = spacing[1], spacing[0]
         x_coords = (x_indices * spacing_x) / 1000.0
         y_coords = (y_indices * spacing_y) / 1000.0
@@ -92,6 +92,8 @@ class Dicom2PCLNode(Node):
                 count=1,
             ),
         ]
+
+
 
         pcl_msg = point_cloud2.create_cloud(msg.header, fields, points)
         self.pcl_pub.publish(pcl_msg)

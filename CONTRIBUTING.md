@@ -115,23 +115,19 @@ Enhancement suggestions are tracked as [GitHub issues](https://github.com/ekumen
 
 ### Your First Code Contribution
 
-This section guides you through contributing code to Beluga. Following these guidelines will help maintainers and ensure your contributions are reviewed and eventually accepted.
+This section guides you through contributing code to dicom_to_ros. Following these guidelines will help maintainers and ensure your contributions are reviewed and eventually accepted.
 
 #### A Primer On Project Workflow
 
-This projects adopts a [feature branch workflow](https://about.gitlab.com/topics/version-control/what-is-git-workflow/#feature-branching-git-workflow) ([forking workflow](https://about.gitlab.com/topics/version-control/what-is-git-workflow/#forking-git-workflow) for contributors that are not maintainers), with pull requests for code integration. Every code contribution must be associated to a [feature request](#requesting-features) or [bug report](#reporting-bugs) with enough consensus and evidence to move forward, signaled with `needs-work` and `needs-fix` labels respectively. Contributors must sign-off each commit by adding a `Signed-off-by: ...` line to every commit message to certify that they have the right to submit the code they are contributing to the project according to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/). Pull requests must have been reviewed and approved at least once to be merged.
+This projects adopts a [feature branch workflow](https://about.gitlab.com/topics/version-control/what-is-git-workflow/#feature-branching-git-workflow) ([forking workflow](https://about.gitlab.com/topics/version-control/what-is-git-workflow/#forking-git-workflow) for contributors that are not maintainers), with pull requests for code integration. Every code contribution must be associated to a [suggesting enhancements](#suggesting-enhancement) or [bug report](#reporting-bugs) with enough consensus and evidence to move forward, signaled with `needs-work` and `needs-fix` labels respectively. Contributors must sign-off each commit by adding a `Signed-off-by: ...` line to every commit message to certify that they have the right to submit the code they are contributing to the project according to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/). Pull requests must have been reviewed and approved at least once to be merged.
 
 #### How Do I Submit a Good Code Contribution?
 
-1. **Fork the [Beluga repository](https://github.com/Ekumen-OS/beluga/) to your GitHub account**.
+1. **Fork the [Beluga repository](https://github.com/Ekumen-OS/dicom_to_ros/) to your GitHub account**.
 1. **Clone the repository fork locally**. You will need `git`.
    ```bash
    git clone --recursive git@github.com:<your_username>/beluga.git
    ```
-1. **Install pre-commit hooks**. You will need [`pre-commit`](https://pre-commit.com).
-   ```bash
-   cd beluga
-   pre-commit install
    ```
 1. **Create a new branch where your work will go**.
    ```bash
@@ -144,6 +140,8 @@ This projects adopts a [feature branch workflow](https://about.gitlab.com/topics
 1. **Open a pull request**. Make sure all tests and linters pass on your branch before opening.
 
 ## Styleguides
+
+We follow [ROS2 code style guidelines for python](https://docs.ros.org/en/rolling/The-ROS2-Project/Contributing/Code-Style-Language-Versions.html#python)
 
 <!-- omit in toc -->
 ### Commit messages

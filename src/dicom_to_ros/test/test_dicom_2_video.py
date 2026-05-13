@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from unittest.mock import MagicMock
 import cv_bridge
+from std_msgs.msg import Header
 from dicom_to_ros.dicom_2_video import Dicom2VideoNode
 
 
@@ -13,7 +14,7 @@ def make_msg(rows=8, cols=8, frames=1, dtype="uint16", fill=1000):
     msg.columns = cols
     msg.pixel_dtype = dtype
     msg.pixel_spacing = [1.0, 1.0]
-    msg.header = MagicMock()
+    msg.header = Header()
     return msg
 
 

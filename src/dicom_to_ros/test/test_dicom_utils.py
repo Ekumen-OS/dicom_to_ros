@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from unittest.mock import MagicMock
+from std_msgs.msg import Header
 from dicom_to_ros.dicom_utils import prepare_pixel_data, generate_camera_info
 
 
@@ -42,16 +42,16 @@ class TestPreparePixelData:
 
 class TestGenerateCameraInfo:
     def test_dimensions_match_inputs(self):
-        msg = generate_camera_info(MagicMock(), 128, 256, [0.5, 0.5])
+        msg = generate_camera_info(Header(), 128, 256, [0.5, 0.5])
         assert msg.height == 128
         assert msg.width == 256
 
     def test_k_matrix_derived_from_spacing(self):
-        msg = generate_camera_info(MagicMock(), 64, 64, [2.0, 4.0])
+        msg = generate_camera_info(Header(), 64, 64, [2.0, 4.0])
         assert msg.k[0] == pytest.approx(1.0 / 4.0)  # fx = 1/col_spacing
         assert msg.k[4] == pytest.approx(1.0 / 2.0)  # fy = 1/row_spacing
 
     def test_zero_spacing_does_not_raise(self):
-        msg = generate_camera_info(MagicMock(), 64, 64, [0.0, 0.0])
+        msg = generate_camera_info(Header(), 64, 64, [0.0, 0.0])
         assert msg.k[0] == pytest.approx(1.0)
         assert msg.k[4] == pytest.approx(1.0)

@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
+from std_msgs.msg import Header
 from dicom_to_ros.dicom_2_study_info import Dicom2StudyInfoNode
 
 
@@ -16,7 +17,7 @@ def make_msg(**kwargs):
     )
     defaults.update(kwargs)
     msg = MagicMock()
-    msg.header = MagicMock()
+    msg.header = Header()
     for k, v in defaults.items():
         setattr(msg, k, v)
     return msg

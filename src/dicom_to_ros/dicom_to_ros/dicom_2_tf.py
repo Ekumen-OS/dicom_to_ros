@@ -96,8 +96,12 @@ def main(args=None):
         Defaults to None.
     """
     rclpy.init(args=args)
-    rclpy.spin(Dicom2TFNode())
-    rclpy.shutdown()
+    node = Dicom2TFNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

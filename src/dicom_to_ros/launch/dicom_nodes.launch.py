@@ -41,28 +41,36 @@ def generate_launch_description():
             package="dicom_to_ros",
             executable="dicom_server",
             name="dicom_server_node",
+            output="screen",
         ),
         Node(
             package="dicom_to_ros",
             executable="dicom2img",
             name="dicom2img_node",
+            output="screen",
         ),
         Node(
             package="dicom_to_ros",
             executable="dicom2studyinfo",
             name="dicom2studyinfo_node",
+            output="screen",
         ),
         Node(
             package="dicom_to_ros",
             executable="dicom2video",
             name="dicom2video_node",
+            output="screen",
         ),
         Node(
             package="dicom_to_ros",
             executable="dicom2pcl",
             name="dicom2pcl_node",
+            output="screen",
         ),
         Node(
-            package="dicom_to_ros", executable="dicom2tf", name="dicom2tf_node"
+            package="dicom_to_ros",
+            executable="dicom2tf",
+            name="dicom2tf_node",
+            output="screen",
         ),
     ])

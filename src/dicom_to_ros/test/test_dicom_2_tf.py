@@ -1,5 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
+from std_msgs.msg import Header
+from builtin_interfaces.msg import Time
 from dicom_to_ros.dicom_2_tf import Dicom2TFNode
 
 
@@ -7,7 +9,8 @@ def make_msg(position=None, orientation=None):
     msg = MagicMock()
     msg.image_position = position or [0.0, 0.0, 0.0]
     msg.image_orientation = orientation or [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
-    msg.header.stamp = MagicMock()
+    msg.header = Header()
+    msg.header.stamp = Time()
     return msg
 
 

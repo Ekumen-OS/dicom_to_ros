@@ -120,8 +120,12 @@ def main(args=None):
         Defaults to None.
     """
     rclpy.init(args=args)
-    rclpy.spin(DicomServerNode())
-    rclpy.shutdown()
+    node = DicomServerNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

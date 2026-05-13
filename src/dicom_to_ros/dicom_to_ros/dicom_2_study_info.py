@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
-import pydicom
 import rclpy
 from rclpy.node import Node
 from dicom_interfaces.msg import Dicom, StudyInfo

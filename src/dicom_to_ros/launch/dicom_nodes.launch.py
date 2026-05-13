@@ -30,11 +30,13 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     """
-    Generates the launch description for the DICOM pipeline.
+    Generate the launch description for the DICOM pipeline.
 
-    Returns:
-        LaunchDescription: A ROS 2 launch description containing all the nodes
-        for the pipeline.
+    Returns
+    -------
+    LaunchDescription
+        A ROS 2 launch description containing all nodes for the pipeline.
+
     """
     return LaunchDescription([
         Node(

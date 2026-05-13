@@ -19,22 +19,23 @@ from sensor_msgs.msg import CameraInfo
 
 def extract_geometry(ds):
     """
-    Robustly finds PixelSpacing and SliceThickness.
+    Extract PixelSpacing and SliceThickness from a DICOM dataset.
 
-    This function attempts to extract geometric information from a pydicom dataset,
-    checking standard tags as well as enhanced DICOM tags found in functional groups.
+    Checks standard tags first, then Shared Functional Groups Sequence, then
+    Per-Frame Functional Groups Sequence. Falls back to 1.0 mm for any missing
+    value.
 
-    It checks in the following order:
-    1. Top-level standard tags (`PixelSpacing`, `SliceThickness`).
-    2. Shared Functional Groups Sequence (for enhanced DICOM).
-    3. Per-Frame Functional Groups Sequence (for enhanced DICOM, using frame 0).
+    Args
+    ----
+    ds : pydicom.dataset.Dataset
+        The DICOM dataset to process.
 
-    Args:
-        ds (pydicom.dataset.Dataset): The DICOM dataset to process.
+    Returns
+    -------
+    tuple[list[float], float]
+        Pixel spacing as ``[row_spacing, col_spacing]`` and slice thickness,
+        both in mm.
 
-    Returns:
-        tuple[list[float], float]: A tuple containing the pixel spacing
-        (as a list of two floats [row, col]) and the slice thickness (as a float).
     """
     pixel_spacing = None
     slice_thickness = None
@@ -87,6 +88,7 @@ def extract_geometry(ds):
 
     return pixel_spacing, slice_thickness
 
+
 def prepare_pixel_data(pixel_data: bytes, rows: int, columns: int, pixel_dtype: str):
     """
     Prepare pixel data from a Dicom message for processing.
@@ -94,20 +96,32 @@ def prepare_pixel_data(pixel_data: bytes, rows: int, columns: int, pixel_dtype: 
     Reconstructs a numpy array from raw pixel bytes and dimensions, handling
     both single-frame and multi-frame images into a consistent (N, H, W) format.
 
-    Args:
-        pixel_data: Raw pixel bytes from the Dicom message.
-        rows: Image height in pixels.
-        columns: Image width in pixels.
-        pixel_dtype: Numpy dtype string (e.g. "uint16", "int16", "uint8").
+    Args
+    ----
+    pixel_data : bytes
+        Raw pixel bytes from the Dicom message.
+    rows : int
+        Image height in pixels.
+    columns : int
+        Image width in pixels.
+    pixel_dtype : str
+        Numpy dtype string (e.g. ``"uint16"``, ``"int16"``, ``"uint8"``).
 
-    Returns:
-        tuple[np.ndarray, bool]: Pixel array with shape (N_Frames, H, W) and a
-        boolean indicating if the data is multi-frame.
+    Returns
+    -------
+    tuple[np.ndarray, bool]
+        Pixel array with shape ``(N_Frames, H, W)`` and a boolean indicating
+        if the data is multi-frame.
 
-    Raises:
-        ValueError: If the pixel data has an unsupported number of dimensions.
+    Raises
+    ------
+    ValueError
+        If the pixel data has an unsupported number of dimensions.
+
     """
-    pixels = np.frombuffer(bytes(pixel_data), dtype=np.dtype(pixel_dtype)).reshape(-1, rows, columns)
+    pixels = np.frombuffer(
+        bytes(pixel_data), dtype=np.dtype(pixel_dtype)
+    ).reshape(-1, rows, columns)
 
     is_multiframe = pixels.shape[0] > 1
 
@@ -121,21 +135,27 @@ def prepare_pixel_data(pixel_data: bytes, rows: int, columns: int, pixel_dtype: 
 
 def generate_camera_info(header, height, width, spacing):
     """
-    Generates a `sensor_msgs/CameraInfo` message based on DICOM metadata.
+    Generate a ``sensor_msgs/CameraInfo`` message from DICOM metadata.
 
-    This function creates a simplified camera model where the focal length is
-    derived from the pixel spacing, assuming an orthographic projection. This is
-    useful for providing spatial context to the 2D image in ROS.
+    Creates a simplified orthographic camera model whose focal length is
+    derived from the pixel spacing, providing spatial context for the image.
 
-    Args:
-        header (std_msgs.msg.Header): The ROS header to use for the message,
-            containing timestamp and frame ID.
-        height (int): The height of the image in pixels.
-        width (int): The width of the image in pixels.
-        spacing (list[float]): The pixel spacing `[row_spacing, col_spacing]` in mm/pixel.
+    Args
+    ----
+    header : std_msgs.msg.Header
+        ROS header containing timestamp and frame ID.
+    height : int
+        Image height in pixels.
+    width : int
+        Image width in pixels.
+    spacing : list[float]
+        Pixel spacing ``[row_spacing, col_spacing]`` in mm/pixel.
 
-    Returns:
-        sensor_msgs.msg.CameraInfo: The generated CameraInfo message.
+    Returns
+    -------
+    sensor_msgs.msg.CameraInfo
+        The generated CameraInfo message.
+
     """
     msg = CameraInfo()
     msg.header = header

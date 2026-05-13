@@ -28,15 +28,18 @@ from dicom_to_ros.dicom_utils import (
 
 class Dicom2ImgNode(Node):
     """
-    A ROS 2 node that subscribes to a DICOM message, extracts single-frame
-    image data, and publishes it as a ROS Image message and a corresponding
-    CameraInfo message.
+    A ROS 2 node that converts single-frame DICOM images to ROS messages.
+
+    Subscribes to DICOM messages, extracts single-frame image data, and
+    publishes it as a ROS Image message and a corresponding CameraInfo message.
     """
 
     def __init__(self):
         """
-        Initializes the node, sets up the subscriber for DICOM messages, and
-        creates publishers for the image and camera info.
+        Initialize the node.
+
+        Sets up the subscriber for DICOM messages and creates publishers for
+        the image and camera info.
         """
         super().__init__("dicom2img")
         self.sub = self.create_subscription(
@@ -50,14 +53,10 @@ class Dicom2ImgNode(Node):
 
     def callback(self, msg):
         """
-        Callback function for the DICOM message subscriber.
+        Process an incoming DICOM message.
 
-        It processes the DICOM data, converts it to a ROS Image message,
-        generates CameraInfo, and publishes both. This callback specifically
-        handles single-frame DICOM images.
-
-        Args:
-            msg (Dicom): The incoming DICOM message.
+        Converts the pixel data to a ROS Image message, generates CameraInfo,
+        and publishes both. Skips multi-frame images.
         """
         volume, is_multiframe = prepare_pixel_data(
             msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype
@@ -92,13 +91,7 @@ class Dicom2ImgNode(Node):
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
     node = Dicom2ImgNode()
     try:

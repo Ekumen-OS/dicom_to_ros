@@ -34,8 +34,11 @@ class Dicom2TFNode(Node):
     """
 
     def __init__(self):
-        """Initializes the node, creating a subscription for DICOM messages and a
-        `TransformBroadcaster`."""
+        """
+        Initialize the node.
+
+        Creates a subscription for DICOM messages and a `TransformBroadcaster`.
+        """
         super().__init__("dicom2tf")
         self.sub = self.create_subscription(
             Dicom, "/dicom_interfaces/Dicom", self.callback, 10
@@ -44,14 +47,11 @@ class Dicom2TFNode(Node):
 
     def callback(self, msg):
         """
-        Callback function to process an incoming DICOM message.
+        Process an incoming DICOM message.
 
-        It extracts the position and orientation from the DICOM metadata, converts
-        them into a ROS `TransformStamped` message, and broadcasts it to the `/tf`
-        topic. The transform links the `patient_frame` to the `dicom_optical_frame`.
-
-        Args:
-            msg (Dicom): The incoming DICOM message.
+        Extracts position and orientation from the DICOM metadata, converts them
+        into a `TransformStamped`, and broadcasts it linking `patient_frame` to
+        `dicom_optical_frame`.
         """
         # Translation in mm (convert to meters for ROS)
         x_m, y_m, z_m = (
@@ -88,13 +88,7 @@ class Dicom2TFNode(Node):
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
     node = Dicom2TFNode()
     try:

@@ -31,10 +31,14 @@ class DicomServerNode(Node):
     """
 
     def __init__(self):
-        """Initializes the node, setting up a pynetdicom Application Entity (AE)
-        to act as a DICOM server. It configures supported presentation contexts for
-        storage and starts the server in a non-blocking thread. It also creates a
-        ROS publisher for the DICOM messages."""
+        """
+        Initialize the node.
+
+        Sets up a pynetdicom Application Entity (AE) to act as a DICOM server.
+        Configures supported presentation contexts for storage, starts the
+        server in a non-blocking thread, and creates a ROS publisher for the
+        DICOM messages.
+        """
         super().__init__("dicom_server")
         self.pub = self.create_publisher(Dicom, "/dicom_interfaces/Dicom", 10)
 
@@ -52,19 +56,21 @@ class DicomServerNode(Node):
 
     def handle_c_store(self, event):
         """
-        Event handler for the pynetdicom `EVT_C_STORE` event.
+        Handle an incoming EVT_C_STORE event.
 
-        This is triggered when a C-STORE request is received from a peer. The
-        function processes the incoming DICOM dataset, extracts metadata and
-        pixel data, wraps them in a ROS `Dicom` message, and publishes it.
+        Processes the DICOM dataset, extracts metadata and pixel data, wraps
+        them in a ROS `Dicom` message, and publishes it.
 
-        Args:
-            event (pynetdicom.events.Event): The event instance containing the
-                dataset and other request information.
+        Args
+        ----
+        event : pynetdicom.events.Event
+            The event instance containing the dataset and request information.
 
-        Returns:
-            int: A DICOM status code. `0x0000` for success, or an error code
-            (e.g., `0xC000`) on failure.
+        Returns
+        -------
+        int
+            A DICOM status code: ``0x0000`` for success, ``0xC000`` on failure.
+
         """
         try:
             ds = event.dataset
@@ -112,13 +118,7 @@ class DicomServerNode(Node):
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
     node = DicomServerNode()
     try:

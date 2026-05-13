@@ -21,14 +21,19 @@ from dicom_interfaces.msg import Dicom, StudyInfo
 
 class Dicom2StudyInfoNode(Node):
     """
-    A ROS 2 node that extracts metadata from a DICOM message and publishes it
-    as a `StudyInfo` message. This node subscribes to raw DICOM data and
-    publishes key information about the patient and study.
+    A ROS 2 node that extracts and publishes DICOM study metadata.
+
+    Subscribes to raw DICOM data and publishes key patient and study
+    information as a `StudyInfo` message.
     """
 
     def __init__(self):
-        """Initializes the node, creating a subscription for DICOM messages and a
-        publisher for `StudyInfo` messages."""
+        """
+        Initialize the node.
+
+        Creates a subscription for DICOM messages and a publisher for
+        `StudyInfo` messages.
+        """
         super().__init__("dicom2studyinfo")
         self.sub = self.create_subscription(
             Dicom, "/dicom_interfaces/Dicom", self.callback, 10
@@ -37,14 +42,10 @@ class Dicom2StudyInfoNode(Node):
 
     def callback(self, msg):
         """
-        Callback function to process an incoming DICOM message.
+        Process an incoming DICOM message.
 
-        It parses the DICOM data to extract patient and study metadata,
-        populates a `StudyInfo` message, and publishes it.
-
-        Args:
-            msg (Dicom): The incoming DICOM message containing the raw DICOM
-                file data.
+        Extracts patient and study metadata and publishes it as a `StudyInfo`
+        message.
         """
         info = StudyInfo()
         info.header = msg.header
@@ -62,13 +63,7 @@ class Dicom2StudyInfoNode(Node):
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
     node = Dicom2StudyInfoNode()
     try:

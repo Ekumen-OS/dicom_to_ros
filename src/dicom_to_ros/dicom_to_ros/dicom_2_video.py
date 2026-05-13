@@ -28,15 +28,18 @@ from dicom_to_ros.dicom_utils import (
 
 class Dicom2VideoNode(Node):
     """
-    A ROS 2 node that processes multi-frame DICOM files (videos) and publishes
-    each frame as a ROS Image message. It subscribes to DICOM messages, and for
-    each multi-frame sequence, it publishes a stream of `Image` messages and a
-    corresponding `CameraInfo` message for each frame.
+    A ROS 2 node that publishes multi-frame DICOM data as a video stream.
+
+    Subscribes to DICOM messages and for each multi-frame sequence publishes
+    a stream of `Image` messages and a corresponding `CameraInfo` message.
     """
 
     def __init__(self):
-        """Initializes the node, creating a subscription for DICOM messages and
-        publishers for the video frames (`Image`) and camera info (`CameraInfo`).
+        """
+        Initialize the node.
+
+        Creates a subscription for DICOM messages and publishers for the video
+        frames (`Image`) and camera info (`CameraInfo`).
         """
         super().__init__("dicom2video")
         self.sub = self.create_subscription(
@@ -50,14 +53,10 @@ class Dicom2VideoNode(Node):
 
     def callback(self, msg):
         """
-        Callback function for the DICOM message subscriber.
+        Process an incoming DICOM message.
 
-        It processes multi-frame DICOM data, normalizes the entire volume, and
-        then iterates through each frame, publishing it as a ROS `Image` message
-        along with `CameraInfo`. It ignores single-frame images.
-
-        Args:
-            msg (Dicom): The incoming DICOM message.
+        Normalizes the full pixel volume and publishes each frame as a ROS
+        `Image` message along with `CameraInfo`. Skips single-frame images.
         """
         volume, is_multiframe = prepare_pixel_data(
             msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype
@@ -97,13 +96,7 @@ class Dicom2VideoNode(Node):
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
     node = Dicom2VideoNode()
     try:

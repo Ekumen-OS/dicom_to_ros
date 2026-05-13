@@ -32,8 +32,12 @@ class Dicom2PCLNode(Node):
     """
 
     def __init__(self):
-        """Initializes the node, creating a subscription to the DICOM topic and a
-        publisher for the PointCloud2 messages."""
+        """
+        Initialize the node.
+
+        Creates a subscription to the DICOM topic and a publisher for the
+        PointCloud2 messages.
+        """
         super().__init__("dicom2pcl")
         self.sub = self.create_subscription(
             Dicom, "/dicom_interfaces/Dicom", self.callback, 10
@@ -44,14 +48,10 @@ class Dicom2PCLNode(Node):
 
     def callback(self, msg):
         """
-        Callback function that processes an incoming DICOM message.
+        Process an incoming DICOM message.
 
-        It reads the pixel volume, thresholds it, and converts the resulting
-        voxels into 3D points with intensity values. The resulting point cloud
-        is then published.
-
-        Args:
-            msg (Dicom): The incoming DICOM message.
+        Thresholds the pixel volume and converts surviving voxels into 3D
+        points with intensity values, then publishes the resulting point cloud.
         """
         volume, _ = prepare_pixel_data(msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype)
         volume = volume.astype(np.float32)
@@ -67,7 +67,7 @@ class Dicom2PCLNode(Node):
         threshold = 20.0
         z_indices, y_indices, x_indices = np.where(volume > threshold)
         intensities = volume[z_indices, y_indices, x_indices]
-   
+
         spacing_x, spacing_y = spacing[1], spacing[0]
         x_coords = (x_indices * spacing_x) / 1000.0
         y_coords = (y_indices * spacing_y) / 1000.0
@@ -93,21 +93,13 @@ class Dicom2PCLNode(Node):
             ),
         ]
 
-
-
         pcl_msg = point_cloud2.create_cloud(msg.header, fields, points)
         self.pcl_pub.publish(pcl_msg)
         self.get_logger().info(f"Published PointCloud ({len(points)} points).")
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
     node = Dicom2PCLNode()
     try:

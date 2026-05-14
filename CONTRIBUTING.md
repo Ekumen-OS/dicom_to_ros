@@ -35,7 +35,7 @@ to <contact@ekumenlabs.com>.
 
 ## I Have a Question
 
-> If you want to ask a question, we assume that you have read the available [Documentation]().
+> If you want to ask a question, we assume that you have read the available [Documentation](README.md).
 
 Before you ask a question, it is best to search for existing [Issues](https://github.com/ekumen-OS/dicom_to_ros/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
 
@@ -60,7 +60,7 @@ We will then take care of the issue as soon as possible.
 A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
 
 - Make sure that you are using the latest version.
-- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions (Make sure that you have read the [documentation](). If you are looking for support, you might want to check [this section](#i-have-a-question)).
+- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions (Make sure that you have read the [documentation](README.md). If you are looking for support, you might want to check [this section](#i-have-a-question)).
 - To see if other users have experienced (and potentially already solved) the same issue you are having, check if there is not already a bug report existing for your bug or error in the [bug tracker](https://github.com/ekumen-OS/dicom_to_ros/issues?q=label%3Abug).
 - Also make sure to search the internet (including Stack Overflow) to see if users outside of the GitHub community have discussed the issue.
 - Collect information about the bug:
@@ -97,7 +97,7 @@ This section guides you through submitting an enhancement suggestion for dicom_t
 #### Before Submitting an Enhancement
 
 - Make sure that you are using the latest version.
-- Read the [documentation]() carefully and find out if the functionality is already covered, maybe by an individual configuration.
+- Read the [documentation](README.md) carefully and find out if the functionality is already covered, maybe by an individual configuration.
 - Perform a [search](https://github.com/ekumen-OS/dicom_to_ros/issues) to see if the enhancement has already been suggested. If it has, add a comment to the existing issue instead of opening a new one.
 - Find out whether your idea fits with the scope and aims of the project. It's up to you to make a strong case to convince the project's developers of the merits of this feature. Keep in mind that we want features that will be useful to the majority of our users and not just a small subset. If you're just targeting a minority of users, consider writing an add-on/plugin library.
 
@@ -123,7 +123,7 @@ This projects adopts a [feature branch workflow](https://about.gitlab.com/topics
 
 #### How Do I Submit a Good Code Contribution?
 
-1. **Fork the [Beluga repository](https://github.com/Ekumen-OS/dicom_to_ros/) to your GitHub account**.
+1. **Fork the [dicom_to_ros repository](https://github.com/Ekumen-OS/dicom_to_ros/) to your GitHub account**.
 1. **Clone the repository fork locally**. You will need `git`.
    ```bash
    git clone --recursive git@github.com:<your_username>/beluga.git

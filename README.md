@@ -20,11 +20,21 @@ This is the ROS 2 workspace containing the pipeline packages:
 
 ## Dicom_samples
 
-This folder contains example DICOM images for testing purposes.
-This data was downloaded from the following sources:
-- https://www.magnetomworld.siemens-healthineers.com/clinical-corner/protocols/dicom-images
-- https://dicom.offis.de/download/images/ddsm/
-- https://www.dicomlibrary.com/ 
+This folder contains example DICOM images for testing. To avoid licensing and repository size issues, the image files are not included in the repository.
+
+When you run `docker compose up`, a one-time service will automatically download and process sample DICOM images from dicomlibrary.com and place them in the `dicom_samples` directory. The script organizes them by dimensionality and modality (e.g., `dicom_samples/2D/CT/`, `dicom_samples/3D/MRI/`).
+
+The script will not re-download files if the `dicom_samples` directory already exists.
+
+> **Note on Data Quality:** Because this is an open-source repository, the automated download script relies on small, freely hosted test files from public repositories (such as the core `pydicom` test suite). While these are perfect for verifying that the pipeline and ROS 2 nodes function correctly, they are toy datasets and **not** high-resolution clinical scans. 
+
+If you want to test high-quality 2D and 3D point cloud rendering in RViz (such as a detailed human head or torso), we highly recommend manually downloading clinical-grade DICOM datasets. You can place these manual downloads directly into the `dicom_samples/` folder. 
+
+**Recommended sources for high-quality DICOMs:**
+* **[OsiriX Datasets](https://www.osirix-viewer.com/resources/dicom-image-library/):** Excellent for clean, high-resolution 3D multi-frame scans (e.g., the MANIX head CTA).
+* **[The Cancer Imaging Archive (TCIA)](https://www.cancerimagingarchive.net/):** Massive repository of real-world clinical datasets across all modalities.
+* **[Siemens Healthineers MAGNETOM World](https://www.magnetomworld.siemens-healthineers.com/clinical-corner/protocols/dicom-images):** Excellent source for high-quality, clinical-grade MRI datasets directly from Siemens scanners.
+* **[DICOM Library](https://www.dicomlibrary.com/):** Good for finding specific anonymized pathological examples.
 
 # Workspace Setup
 

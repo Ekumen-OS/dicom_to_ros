@@ -1,10 +1,23 @@
 services:
+  sample_downloader:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.downloader
+    container_name: dicom_sample_downloader
+    # user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./dicom_samples:/app/dicom_samples
+    command: python3 download_samples.py
+
   dicom_listener:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.bridge
     image: dicom_ros_image
     container_name: dicom_listener
+    depends_on:
+      sample_downloader:
+        condition: service_completed_successfully
     network_mode: host
     ipc: host
     environment:

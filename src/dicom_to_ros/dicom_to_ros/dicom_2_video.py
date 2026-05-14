@@ -1,5 +1,17 @@
-import io
-import pydicom
+# Copyright 2026 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -8,22 +20,24 @@ from sensor_msgs.msg import Image, CameraInfo
 from dicom_interfaces.msg import Dicom
 from dicom_to_ros.dicom_utils import (
     prepare_pixel_data,
-    extract_geometry,
     generate_camera_info,
 )
 
 
 class Dicom2VideoNode(Node):
     """
-    A ROS 2 node that processes multi-frame DICOM files (videos) and publishes
-    each frame as a ROS Image message. It subscribes to DICOM messages, and for
-    each multi-frame sequence, it publishes a stream of `Image` messages and a
-    corresponding `CameraInfo` message for each frame.
+    A ROS 2 node that publishes multi-frame DICOM data as a video stream.
+
+    Subscribes to DICOM messages and for each multi-frame sequence publishes
+    a stream of `Image` messages and a corresponding `CameraInfo` message.
     """
 
     def __init__(self):
-        """Initializes the node, creating a subscription for DICOM messages and
-        publishers for the video frames (`Image`) and camera info (`CameraInfo`).
+        """
+        Initialize the node.
+
+        Creates a subscription for DICOM messages and publishers for the video
+        frames (`Image`) and camera info (`CameraInfo`).
         """
         super().__init__("dicom2video")
         self.sub = self.create_subscription(
@@ -37,23 +51,20 @@ class Dicom2VideoNode(Node):
 
     def callback(self, msg):
         """
-        Callback function for the DICOM message subscriber.
+        Process an incoming DICOM message.
 
-        It processes multi-frame DICOM data, normalizes the entire volume, and
-        then iterates through each frame, publishing it as a ROS `Image` message
-        along with `CameraInfo`. It ignores single-frame images.
-
-        Args:
-            msg (Dicom): The incoming DICOM message.
+        Normalizes the full pixel volume and publishes each frame as a ROS
+        `Image` message along with `CameraInfo`. Skips single-frame images.
         """
-        ds = pydicom.dcmread(io.BytesIO(bytes(msg.dicom_data)))
-        volume, is_multiframe = prepare_pixel_data(ds)
+        volume, is_multiframe = prepare_pixel_data(
+            msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype
+        )
 
         # Only process multi-frame sequences
         if not is_multiframe and volume.shape[0] <= 1:
             return
 
-        spacing, _ = extract_geometry(ds)
+        spacing = msg.pixel_spacing
         volume = volume.astype(np.float32)
 
         # Normalize full volume
@@ -83,16 +94,14 @@ class Dicom2VideoNode(Node):
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
-    rclpy.spin(Dicom2VideoNode())
-    rclpy.shutdown()
+    node = Dicom2VideoNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

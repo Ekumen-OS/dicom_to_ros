@@ -1,26 +1,41 @@
-import cv2
+# Copyright 2026 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import numpy as np
 from sensor_msgs.msg import CameraInfo
 
 
 def extract_geometry(ds):
     """
-    Robustly finds PixelSpacing and SliceThickness.
+    Extract PixelSpacing and SliceThickness from a DICOM dataset.
 
-    This function attempts to extract geometric information from a pydicom dataset,
-    checking standard tags as well as enhanced DICOM tags found in functional groups.
+    Checks standard tags first, then Shared Functional Groups Sequence, then
+    Per-Frame Functional Groups Sequence. Falls back to 1.0 mm for any missing
+    value.
 
-    It checks in the following order:
-    1. Top-level standard tags (`PixelSpacing`, `SliceThickness`).
-    2. Shared Functional Groups Sequence (for enhanced DICOM).
-    3. Per-Frame Functional Groups Sequence (for enhanced DICOM, using frame 0).
+    Args
+    ----
+    ds : pydicom.dataset.Dataset
+        The DICOM dataset to process.
 
-    Args:
-        ds (pydicom.dataset.Dataset): The DICOM dataset to process.
+    Returns
+    -------
+    tuple[list[float], float]
+        Pixel spacing as ``[row_spacing, col_spacing]`` and slice thickness,
+        both in mm.
 
-    Returns:
-        tuple[list[float], float]: A tuple containing the pixel spacing
-        (as a list of two floats [row, col]) and the slice thickness (as a float).
     """
     pixel_spacing = None
     slice_thickness = None
@@ -74,65 +89,73 @@ def extract_geometry(ds):
     return pixel_spacing, slice_thickness
 
 
-def prepare_pixel_data(ds):
+def prepare_pixel_data(pixel_data: bytes, rows: int, columns: int, pixel_dtype: str):
     """
-    Prepare pixel data from a DICOM dataset for processing.
+    Prepare pixel data from a Dicom message for processing.
 
-    Handles color-to-grayscale conversion and normalizes the output shape for
-    both single-frame and multi-frame images to a consistent (N, H, W) format.
+    Reconstructs a numpy array from raw pixel bytes and dimensions, handling
+    both single-frame and multi-frame images into a consistent (N, H, W) format.
 
-    Args:
-        ds (pydicom.dataset.Dataset): The DICOM dataset containing the pixel data.
+    Args
+    ----
+    pixel_data : bytes
+        Raw pixel bytes from the Dicom message.
+    rows : int
+        Image height in pixels.
+    columns : int
+        Image width in pixels.
+    pixel_dtype : str
+        Numpy dtype string (e.g. ``"uint16"``, ``"int16"``, ``"uint8"``).
 
-    Returns:
-        tuple[np.ndarray, bool]: A tuple containing the pixel data as a NumPy
-        array with shape (N_Frames, H, W) and a boolean indicating if the
-        original data was multi-frame.
+    Returns
+    -------
+    tuple[np.ndarray, bool]
+        Pixel array with shape ``(N_Frames, H, W)`` and a boolean indicating
+        if the data is multi-frame.
 
-    Raises:
-        ValueError: If the pixel data has an unsupported number of dimensions.
+    Raises
+    ------
+    ValueError
+        If the pixel data has an unsupported number of dimensions.
+
     """
-    pixels = ds.pixel_array
+    pixels = np.frombuffer(
+        bytes(pixel_data), dtype=np.dtype(pixel_dtype)
+    ).reshape(-1, rows, columns)
 
-    # Check if Color (SamplesPerPixel > 1 usually implies RGB/YBR)
-    if ds.get("SamplesPerPixel", 1) > 1:
-        to_gray = lambda img: cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        if pixels.ndim == 3:
-            # Single Frame Color (H, W, 3)
-            pixels = to_gray(pixels)  # -> (H, W)
-        elif pixels.ndim == 4:
-            # Multi Frame Color (Frames, H, W, 3)
-            frames = []
-            for i in range(pixels.shape[0]):
-                frames.append(to_gray(pixels[i]))
-            pixels = np.array(frames)  # -> (Frames, H, W)
+    is_multiframe = pixels.shape[0] > 1
 
-    # Pixels is either (H, W) or (Frames, H, W)
-    if pixels.ndim == 2:
-        return np.expand_dims(pixels, axis=0), False
+    if pixels.ndim == 3 and pixels.shape[0] == 1:
+        return pixels, False
     elif pixels.ndim == 3:
-        return pixels, True
+        return pixels, is_multiframe
     else:
         raise ValueError(f"Unsupported pixel dimensions: {pixels.shape}")
 
 
 def generate_camera_info(header, height, width, spacing):
     """
-    Generates a `sensor_msgs/CameraInfo` message based on DICOM metadata.
+    Generate a ``sensor_msgs/CameraInfo`` message from DICOM metadata.
 
-    This function creates a simplified camera model where the focal length is
-    derived from the pixel spacing, assuming an orthographic projection. This is
-    useful for providing spatial context to the 2D image in ROS.
+    Creates a simplified orthographic camera model whose focal length is
+    derived from the pixel spacing, providing spatial context for the image.
 
-    Args:
-        header (std_msgs.msg.Header): The ROS header to use for the message,
-            containing timestamp and frame ID.
-        height (int): The height of the image in pixels.
-        width (int): The width of the image in pixels.
-        spacing (list[float]): The pixel spacing `[row_spacing, col_spacing]` in mm/pixel.
+    Args
+    ----
+    header : std_msgs.msg.Header
+        ROS header containing timestamp and frame ID.
+    height : int
+        Image height in pixels.
+    width : int
+        Image width in pixels.
+    spacing : list[float]
+        Pixel spacing ``[row_spacing, col_spacing]`` in mm/pixel.
 
-    Returns:
-        sensor_msgs.msg.CameraInfo: The generated CameraInfo message.
+    Returns
+    -------
+    sensor_msgs.msg.CameraInfo
+        The generated CameraInfo message.
+
     """
     msg = CameraInfo()
     msg.header = header

@@ -5,14 +5,19 @@
   <version>0.0.1</version>
   <description>DICOM Listener to ROS 2 Bridge</description>
   <maintainer email="susana.chavez@ekumenlabs.com">Susana Chavez</maintainer>
-  <license>MIT</license>
+  <maintainer email="gonzalodepedro@ekumenlabs.com">Gonzalo de Pedro</maintainer>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_python</buildtool_depend>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>opencv-python</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-scipy</exec_depend>
 
   <exec_depend>dicom_interfaces</exec_depend>
   

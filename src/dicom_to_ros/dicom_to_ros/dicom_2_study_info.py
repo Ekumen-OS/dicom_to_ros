@@ -1,5 +1,17 @@
-import io
-import pydicom
+# Copyright 2026 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import rclpy
 from rclpy.node import Node
 from dicom_interfaces.msg import Dicom, StudyInfo
@@ -7,14 +19,19 @@ from dicom_interfaces.msg import Dicom, StudyInfo
 
 class Dicom2StudyInfoNode(Node):
     """
-    A ROS 2 node that extracts metadata from a DICOM message and publishes it
-    as a `StudyInfo` message. This node subscribes to raw DICOM data and
-    publishes key information about the patient and study.
+    A ROS 2 node that extracts and publishes DICOM study metadata.
+
+    Subscribes to raw DICOM data and publishes key patient and study
+    information as a `StudyInfo` message.
     """
 
     def __init__(self):
-        """Initializes the node, creating a subscription for DICOM messages and a
-        publisher for `StudyInfo` messages."""
+        """
+        Initialize the node.
+
+        Creates a subscription for DICOM messages and a publisher for
+        `StudyInfo` messages.
+        """
         super().__init__("dicom2studyinfo")
         self.sub = self.create_subscription(
             Dicom, "/dicom_interfaces/Dicom", self.callback, 10
@@ -23,43 +40,35 @@ class Dicom2StudyInfoNode(Node):
 
     def callback(self, msg):
         """
-        Callback function to process an incoming DICOM message.
+        Process an incoming DICOM message.
 
-        It parses the DICOM data to extract patient and study metadata,
-        populates a `StudyInfo` message, and publishes it.
-
-        Args:
-            msg (Dicom): The incoming DICOM message containing the raw DICOM
-                file data.
+        Extracts patient and study metadata and publishes it as a `StudyInfo`
+        message.
         """
-        ds = pydicom.dcmread(io.BytesIO(bytes(msg.dicom_data)))
-
         info = StudyInfo()
         info.header = msg.header
-        info.patient_id = str(ds.get("PatientID", "Unknown"))
-        info.patient_name = str(ds.get("PatientName", "Unknown"))
-        info.sex = str(ds.get("PatientSex", "Unknown"))
-        info.age = str(ds.get("PatientAge", "Unknown"))
-        info.modality = str(ds.get("Modality", "Unknown"))
-        info.study_date = str(ds.get("StudyDate", "Unknown"))
-        info.series_description = str(ds.get("SeriesDescription", "Unknown"))
-        info.sop_instance_uid = str(ds.get("SOPInstanceUID", "Unknown"))
+        info.patient_id = msg.patient_id
+        info.patient_name = msg.patient_name
+        info.sex = msg.sex
+        info.age = msg.age
+        info.modality = msg.modality
+        info.study_date = msg.study_date
+        info.series_description = msg.series_description
+        info.sop_instance_uid = msg.sop_instance_uid
 
         self.pub.publish(info)
         self.get_logger().info("Published StudyInfo")
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
-    rclpy.spin(Dicom2StudyInfoNode())
-    rclpy.shutdown()
+    node = Dicom2StudyInfoNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

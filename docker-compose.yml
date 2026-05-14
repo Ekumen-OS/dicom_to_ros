@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: docker/Dockerfile.downloader
     container_name: dicom_sample_downloader
-    # user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ./dicom_samples:/app/dicom_samples
     command: python3 download_samples.py

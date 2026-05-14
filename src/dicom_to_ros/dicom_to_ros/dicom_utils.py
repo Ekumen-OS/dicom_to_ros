@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 from sensor_msgs.msg import CameraInfo
 
@@ -73,45 +72,34 @@ def extract_geometry(ds):
 
     return pixel_spacing, slice_thickness
 
-
-def prepare_pixel_data(ds):
+def prepare_pixel_data(pixel_data: bytes, rows: int, columns: int, pixel_dtype: str):
     """
-    Prepare pixel data from a DICOM dataset for processing.
+    Prepare pixel data from a Dicom message for processing.
 
-    Handles color-to-grayscale conversion and normalizes the output shape for
-    both single-frame and multi-frame images to a consistent (N, H, W) format.
+    Reconstructs a numpy array from raw pixel bytes and dimensions, handling
+    both single-frame and multi-frame images into a consistent (N, H, W) format.
 
     Args:
-        ds (pydicom.dataset.Dataset): The DICOM dataset containing the pixel data.
+        pixel_data: Raw pixel bytes from the Dicom message.
+        rows: Image height in pixels.
+        columns: Image width in pixels.
+        pixel_dtype: Numpy dtype string (e.g. "uint16", "int16", "uint8").
 
     Returns:
-        tuple[np.ndarray, bool]: A tuple containing the pixel data as a NumPy
-        array with shape (N_Frames, H, W) and a boolean indicating if the
-        original data was multi-frame.
+        tuple[np.ndarray, bool]: Pixel array with shape (N_Frames, H, W) and a
+        boolean indicating if the data is multi-frame.
 
     Raises:
         ValueError: If the pixel data has an unsupported number of dimensions.
     """
-    pixels = ds.pixel_array
+    pixels = np.frombuffer(bytes(pixel_data), dtype=np.dtype(pixel_dtype)).reshape(-1, rows, columns)
 
-    # Check if Color (SamplesPerPixel > 1 usually implies RGB/YBR)
-    if ds.get("SamplesPerPixel", 1) > 1:
-        to_gray = lambda img: cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        if pixels.ndim == 3:
-            # Single Frame Color (H, W, 3)
-            pixels = to_gray(pixels)  # -> (H, W)
-        elif pixels.ndim == 4:
-            # Multi Frame Color (Frames, H, W, 3)
-            frames = []
-            for i in range(pixels.shape[0]):
-                frames.append(to_gray(pixels[i]))
-            pixels = np.array(frames)  # -> (Frames, H, W)
+    is_multiframe = pixels.shape[0] > 1
 
-    # Pixels is either (H, W) or (Frames, H, W)
-    if pixels.ndim == 2:
-        return np.expand_dims(pixels, axis=0), False
+    if pixels.ndim == 3 and pixels.shape[0] == 1:
+        return pixels, False
     elif pixels.ndim == 3:
-        return pixels, True
+        return pixels, is_multiframe
     else:
         raise ValueError(f"Unsupported pixel dimensions: {pixels.shape}")
 

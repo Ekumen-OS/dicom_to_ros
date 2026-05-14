@@ -5,6 +5,7 @@
   <version>0.0.1</version>
   <description>DICOM Listener to ROS 2 Bridge</description>
   <maintainer email="susana.chavez@ekumenlabs.com">Susana Chavez</maintainer>
+  <maintainer email="gonzalodepedro@ekumenlabs.com">Gonzalo de Pedro</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_python</buildtool_depend>

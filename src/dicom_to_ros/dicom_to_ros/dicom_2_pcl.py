@@ -1,3 +1,17 @@
+# Copyright 2026 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -16,8 +30,12 @@ class Dicom2PCLNode(Node):
     """
 
     def __init__(self):
-        """Initializes the node, creating a subscription to the DICOM topic and a
-        publisher for the PointCloud2 messages."""
+        """
+        Initialize the node.
+
+        Creates a subscription to the DICOM topic and a publisher for the
+        PointCloud2 messages.
+        """
         super().__init__("dicom2pcl")
         self.sub = self.create_subscription(
             Dicom, "/dicom_interfaces/Dicom", self.callback, 10
@@ -28,18 +46,12 @@ class Dicom2PCLNode(Node):
 
     def callback(self, msg):
         """
-        Callback function that processes an incoming DICOM message.
+        Process an incoming DICOM message.
 
-        It reads the pixel volume, thresholds it, and converts the resulting
-        voxels into 3D points with intensity values. The resulting point cloud
-        is then published.
-
-        Args:
-            msg (Dicom): The incoming DICOM message.
+        Thresholds the pixel volume and converts surviving voxels into 3D
+        points with intensity values, then publishes the resulting point cloud.
         """
-        volume, _ = prepare_pixel_data(
-            msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype
-        )
+        volume, _ = prepare_pixel_data(msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype)
         volume = volume.astype(np.float32)
         spacing = msg.pixel_spacing
         thickness = msg.slice_thickness
@@ -85,16 +97,14 @@ class Dicom2PCLNode(Node):
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
-    rclpy.spin(Dicom2PCLNode())
-    rclpy.shutdown()
+    node = Dicom2PCLNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

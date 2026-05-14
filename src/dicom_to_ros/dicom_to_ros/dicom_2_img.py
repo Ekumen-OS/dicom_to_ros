@@ -1,3 +1,17 @@
+# Copyright 2026 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -12,15 +26,18 @@ from dicom_to_ros.dicom_utils import (
 
 class Dicom2ImgNode(Node):
     """
-    A ROS 2 node that subscribes to a DICOM message, extracts single-frame
-    image data, and publishes it as a ROS Image message and a corresponding
-    CameraInfo message.
+    A ROS 2 node that converts single-frame DICOM images to ROS messages.
+
+    Subscribes to DICOM messages, extracts single-frame image data, and
+    publishes it as a ROS Image message and a corresponding CameraInfo message.
     """
 
     def __init__(self):
         """
-        Initializes the node, sets up the subscriber for DICOM messages, and
-        creates publishers for the image and camera info.
+        Initialize the node.
+
+        Sets up the subscriber for DICOM messages and creates publishers for
+        the image and camera info.
         """
         super().__init__("dicom2img")
         self.sub = self.create_subscription(
@@ -34,14 +51,10 @@ class Dicom2ImgNode(Node):
 
     def callback(self, msg):
         """
-        Callback function for the DICOM message subscriber.
+        Process an incoming DICOM message.
 
-        It processes the DICOM data, converts it to a ROS Image message,
-        generates CameraInfo, and publishes both. This callback specifically
-        handles single-frame DICOM images.
-
-        Args:
-            msg (Dicom): The incoming DICOM message.
+        Converts the pixel data to a ROS Image message, generates CameraInfo,
+        and publishes both. Skips multi-frame images.
         """
         volume, is_multiframe = prepare_pixel_data(
             msg.pixel_data, msg.rows, msg.columns, msg.pixel_dtype
@@ -76,16 +89,14 @@ class Dicom2ImgNode(Node):
 
 
 def main(args=None):
-    """
-    The main entry point for the ROS 2 node.
-
-    Args:
-        args (list, optional): Command-line arguments for rclpy.
-        Defaults to None.
-    """
+    """Run the node until shutdown."""
     rclpy.init(args=args)
-    rclpy.spin(Dicom2ImgNode())
-    rclpy.shutdown()
+    node = Dicom2ImgNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

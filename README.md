@@ -104,7 +104,7 @@ The system routes data through 6 specialized nodes, launched via `dicom_nodes.la
 DICOM images often come in 12-bit or 16-bit integers with varying ranges. 
 To make them compatible with standard Computer Vision tools (OpenCV/ROS), the imaging nodes perform Min-Max normalization to cast them to `mono8` (uint8):
 
-$$Pixel_{new} = \frac{(Pixel_{raw} - Pixel_{min})}{Pixel_{max}} \times 255$$
+$$Pixel_{new} = \frac{(Pixel_{raw} - Pixel_{min})}{(Pixel_{max} - Pixel_{min})} \times 255$$
 
 ### Metadata and Data Flow
 

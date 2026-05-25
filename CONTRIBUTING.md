@@ -126,14 +126,14 @@ This projects adopts a [feature branch workflow](https://about.gitlab.com/topics
 1. **Fork the [dicom_to_ros repository](https://github.com/Ekumen-OS/dicom_to_ros/) to your GitHub account**.
 1. **Clone the repository fork locally**. You will need `git`.
    ```bash
-   git clone --recursive git@github.com:<your_username>/beluga.git
+   git clone --recursive git@github.com:<your_username>/dicom_to_ros.git
    ```
    ```
 1. **Create a new branch where your work will go**.
    ```bash
    git checkout -b <your_username>/fix-issue-12345 main
    ```
-1. **Work on your contribution**. See [instructions](DEVELOPING.md) on how to get started with Beluga development.
+1. **Work on your contribution**. See [instructions](README.md) on how to get started with `dicom_to_ros`.
 1. **Test your changes**. For bug fixes, make sure regression tests are included.
 1. **Document your changes as needed**. For new features, make sure added functionality is clearly documented.
 1. **Push the branch to your fork on GitHub**.

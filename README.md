@@ -1,6 +1,8 @@
 <div align="center">
-  <img src="doc/dicom_to_ros.png" alt="dicom_to_ros logo" width="180"/>
-  <h1>Dicom to Ros</h1>
+  <div style="display:flex; align-items:center; justify-content:center; gap:20px;">
+    <img src="doc/dicom_to_ros.png" alt="dicom_to_ros logo" width="180"/>
+    <h1>Dicom to Ros</h1>
+  </div>
   <p><em>A fully containerized, open-source bridge between medical imaging and robotics.</em></p>
 
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)

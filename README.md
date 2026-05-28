@@ -12,6 +12,13 @@
 
 ## Overview
 
+<div align="center">
+
+[![IMAGE ALT TEXT HERE](doc/video_preview.png)](https://www.youtube.com/watch?v=j8CpX62j1lM)
+
+</div>
+
+
 Medical imaging relies on **DICOM** (ISO 12052) — the universal standard implemented in hundreds of thousands of imaging devices worldwide. Robotics relies on **ROS 2**. Until now, engineers bridging these two worlds had to manually convert DICOM files to PNGs, JPEGs, or point clouds before running their ROS pipelines, losing spatial metadata and scaling information in the process.
 
 `dicom_to_ros` eliminates that bottleneck. It is a fully distributed, microservice-based ROS 2 pipeline that receives DICOM files over the network and translates them in real-time into standard ROS 2 topics — images, point clouds, video streams, coordinate transforms, and study metadata — with zero manual pre-processing.

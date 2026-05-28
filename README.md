@@ -1,159 +1,216 @@
-# DICOM to ROS2
+<div align="center">
+  <img src="doc/dicom_to_ros.png" alt="dicom_to_ros logo" width="180"/>
+  <h1>Dicom to Ros</h1>
+  <p><em>A fully containerized, open-source bridge between medical imaging and robotics.</em></p>
 
-DICOM is a standard format for medical images, providing both a format for image storage and a network protocol for transmission.
+  [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+  [![ROS 2](https://img.shields.io/badge/ROS%202-Humble-brightgreen)](https://docs.ros.org/en/humble/)
+  [![ISO 12052](https://img.shields.io/badge/DICOM-ISO%2012052-orange)](https://www.dicomstandard.org/)
+</div>
 
-This repository provides a fully distributed, microservice-based ROS 2 pipeline for receiving DICOM files (2D slices and 3D multi-frame volumes) over a network and translating them into standard ROS 2 spatial, visual, and informational topics in real-time.
+---
 
-# Project structure
+## Overview
 
-## Docker
+Medical imaging relies on **DICOM** (ISO 12052) — the universal standard implemented in hundreds of thousands of imaging devices worldwide. Robotics relies on **ROS 2**. Until now, engineers bridging these two worlds had to manually convert DICOM files to PNGs, JPEGs, or point clouds before running their ROS pipelines, losing spatial metadata and scaling information in the process.
 
-This folder provides the `Dockerfile` and `docker-compose.yml` with all the setup needed for running the ROS 2 nodes, dependencies (like `pydicom` and `scipy`), and an RViz2 visualization environment.
+`dicom_to_ros` eliminates that bottleneck. It is a fully distributed, microservice-based ROS 2 pipeline that receives DICOM files over the network and translates them in real-time into standard ROS 2 topics — images, point clouds, video streams, coordinate transforms, and study metadata — with zero manual pre-processing.
 
-## Src
+This framework is designed to accelerate innovation in **robotic-assisted surgery**, **medical computer vision**, and any research domain where clinical imaging data needs to meet a ROS 2 pipeline.
 
-This is the ROS 2 workspace containing the pipeline packages:
+---
 
-1. `dicom_to_ros:` The core package containing the 6 microservice nodes and the launch file to run them all simultaneously.
+## Features
 
-2. `dicom_interfcaes:` This package contains the custom message types used for internal routing and metadata publishing (`Dicom.msg` and `StudyInfo.msg`).
+- **Real-time DICOM ingestion** via standard C-STORE SCP network protocol (no file system polling)
+- **2D slice publishing** as `sensor_msgs/Image` + `sensor_msgs/CameraInfo` with correct pixel spacing
+- **3D volume streaming** as a live ROS 2 video feed (`sensor_msgs/Image` sequence)
+- **Volumetric point cloud** generation from multi-frame DICOM with physically accurate spacing
+- **Patient coordinate system → ROS TF tree** mapping, converting DICOM directional cosines to a quaternion transform
+- **Study metadata** republished as structured `StudyInfo` messages (patient demographics, modality, date, etc.)
+- **Timestamp synchronization**: all messages from a single DICOM file share the same `header.stamp`, enabling exact `message_filters::TimeSynchronizer` alignment
+- **Fully containerized**: plug-and-play Docker Compose setup with RViz2 visualization included
 
-## Dicom_samples
+---
 
-This folder contains example DICOM images for testing. To avoid licensing and repository size issues, the image files are not included in the repository.
+## Repository Structure
 
-When you run `docker compose up`, a one-time service will automatically download and process sample DICOM images from dicomlibrary.com and place them in the `dicom_samples` directory. The script organizes them by dimensionality and modality (e.g., `dicom_samples/2D/CT/`, `dicom_samples/3D/MRI/`).
+```
+dicom_to_ros/
+├── dicom_interfaces/          # Custom ROS 2 message definitions
+│   └── msg/
+│       ├── Dicom.msg          # Central internal message (metadata + pixel data)
+│       └── StudyInfo.msg      # Patient and study metadata subset
+├── dicom_to_ros/              # Core ROS 2 package — 6 microservice nodes
+│   └── dicom_to_ros/
+│       ├── dicom_server.py    # DICOM SCP listener (entry point)
+│       ├── dicom_2_img.py     # 2D image publisher
+│       ├── dicom_2_video.py   # 3D volume → video stream publisher
+│       ├── dicom_2_pcl.py     # Point cloud publisher
+│       ├── dicom_2_tf.py      # TF transform publisher
+│       ├── dicom_2_study_info.py  # Study metadata publisher
+│       └── dicom_utils.py     # Shared utilities
+├── dicom_to_ros_demo/         # Docker-based demo environment
+│   ├── docker/
+│   │   ├── docker-compose.yml
+│   │   ├── Dockerfile.bridge
+│   │   └── Dockerfile.downloader
+│   ├── rviz_config/           # Pre-configured RViz2 layout
+│   └── test_data_utils/
+│       └── download_samples.py
+└── doc/
+    └── dicom_to_ros.png
+```
 
-The script will not re-download files if the `dicom_samples` directory already exists.
+---
 
-> **Note on Data Quality:** Because this is an open-source repository, the automated download script relies on small, freely hosted test files from public repositories (such as the core `pydicom` test suite). While these are perfect for verifying that the pipeline and ROS 2 nodes function correctly, they are toy datasets and **not** high-resolution clinical scans. 
+## Architecture
 
-If you want to test high-quality 2D and 3D point cloud rendering in RViz (such as a detailed human head or torso), we highly recommend manually downloading clinical-grade DICOM datasets. You can place these manual downloads directly into the `dicom_samples/` folder. 
+The pipeline uses a fan-out microservice architecture. A single `dicom_server` node acts as the DICOM network listener and publishes a comprehensive internal `Dicom` message. All downstream nodes subscribe independently to that topic and produce their specialized ROS 2 output.
 
-**Recommended sources for high-quality DICOMs:**
-* **[OsiriX Datasets](https://www.osirix-viewer.com/resources/dicom-image-library/):** Excellent for clean, high-resolution 3D multi-frame scans (e.g., the MANIX head CTA).
-* **[The Cancer Imaging Archive (TCIA)](https://www.cancerimagingarchive.net/):** Massive repository of real-world clinical datasets across all modalities.
-* **[Siemens Healthineers MAGNETOM World](https://www.magnetomworld.siemens-healthineers.com/clinical-corner/protocols/dicom-images):** Excellent source for high-quality, clinical-grade MRI datasets directly from Siemens scanners.
-* **[DICOM Library](https://www.dicomlibrary.com/):** Good for finding specific anonymized pathological examples.
+```
+DICOM Client (storescu)
+        │  C-STORE (port 11112)
+        ▼
+┌───────────────┐
+│ dicom_server  │──── /dicom_interfaces/Dicom ────┬────────────────────┬──────────────────┬──────────────────┬──────────────────┐
+└───────────────┘                                 │                    │                  │                  │                  │
+                                          ┌───────────────┐  ┌────────────────┐  ┌──────────────┐  ┌────────────────┐  ┌──────────────┐
+                                          │dicom2studyinfo│  │  dicom2img     │  │ dicom2video  │  │  dicom2pcl     │  │  dicom2tf    │
+                                          └───────┬───────┘  └───────┬────────┘  └──────┬───────┘  └───────┬────────┘  └──────┬───────┘
+                                                  │                  │                  │                  │                  │
+                                          /dicom_study_info  /dicom_image        /dicom_video_frames /dicom_point_cloud       /tf
+                                                             /dicom_camera_info  /dicom_video_camera_info
+```
 
-# Workspace Setup
+### Nodes
 
-Start the complete pipeline (including the background listener and RViz) by running:
+| Node | Description |
+| :--- | :--- |
+| `dicom_server` | DICOM Storage SCP. Receives C-STORE requests, parses the file, and publishes the central `dicom_interfaces/Dicom` message. |
+| `dicom2studyinfo` | Extracts patient demographics and study metadata; republishes as `dicom_interfaces/StudyInfo`. |
+| `dicom2img` | Handles single-frame (2D) scans. Publishes a normalized grayscale `sensor_msgs/Image` and `sensor_msgs/CameraInfo`. |
+| `dicom2video` | Handles multi-frame (3D) volumes. Streams slices as a `sensor_msgs/Image` sequence alongside `sensor_msgs/CameraInfo`. |
+| `dicom2pcl` | Generates a `sensor_msgs/PointCloud2` from volumetric data using pixel spacing, slice thickness, and intensity thresholding. |
+| `dicom2tf` | Reads Image Position/Orientation (Patient) DICOM tags. Converts directional cosines to a quaternion and broadcasts the `patient_frame` → `dicom_optical_frame` transform via `/tf`. |
+
+### Published Topics
+
+| Topic | Type | Publisher | Description |
+| :--- | :--- | :--- | :--- |
+| `/dicom_interfaces/Dicom` | `dicom_interfaces/Dicom` | `dicom_server` | Central internal message: parsed metadata + raw pixel data. |
+| `/dicom_study_info` | `dicom_interfaces/StudyInfo` | `dicom2studyinfo` | Patient ID, name, modality, date, series description. |
+| `/dicom_image` | `sensor_msgs/Image` | `dicom2img` | 2D image normalized to 8-bit grayscale. |
+| `/dicom_camera_info` | `sensor_msgs/CameraInfo` | `dicom2img` | Camera intrinsics for `/dicom_image`. |
+| `/dicom_video_frames` | `sensor_msgs/Image` | `dicom2video` | Per-slice video stream from a 3D volume. |
+| `/dicom_video_camera_info` | `sensor_msgs/CameraInfo` | `dicom2video` | Camera intrinsics for `/dicom_video_frames`. |
+| `/dicom_point_cloud` | `sensor_msgs/PointCloud2` | `dicom2pcl` | 3D point cloud with intensity values from volumetric data. |
+| `/tf` | `tf2_msgs/TFMessage` | `dicom2tf` | Patient coordinate system → image frame transform. |
+
+> **Synchronization:** All messages produced from a single DICOM file share the same `header.stamp`, making them compatible with `message_filters::TimeSynchronizer` for exact alignment of spatial, visual, and clinical data.
+
+<!-- ### Image Normalization
+
+DICOM images are typically 12-bit or 16-bit integers. The pipeline normalizes them to `mono8` (uint8) for compatibility with standard ROS 2 computer vision tooling:
+
+$$Pixel_{new} = \frac{(Pixel_{raw} - Pixel_{min})}{(Pixel_{max} - Pixel_{min})} \times 255$$ -->
+
+---
+
+<!-- ## Quick Start (Docker)
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/)
+- A Linux host with X11 (for RViz2 visualization)
+
+### Run the Demo
 
 ```bash
+git clone https://github.com/Ekumen-OS/dicom_to_ros.git
+cd dicom_to_ros/dicom_to_ros_demo
+
+# Allow X11 connections from Docker
+xhost +local:root
+
+# Build and start the full pipeline (DICOM listener + RViz2)
 docker compose up --build -d
 ```
 
-Because of the Docker configuration, the ROS 2 pipeline is launched automatically upon container startup. 
-The `pynetdicom` server will be immediately ready to accept requests on port 11112.
+On first run, a `sample_downloader` service automatically downloads and organizes sample DICOM files into `dicom_samples/2D/CT/`, `dicom_samples/3D/MRI/`, etc. The pipeline starts immediately after and listens for DICOM connections on port `11112`.
 
-# Workflow
+### Send a DICOM File
 
-This package is split into a distributed microservice architecture, allowing for robust fault tolerance and separation of concerns.
+Install `dcmtk` on your host machine:
 
-<img src= workflow_dicom.png width=700 />
+```bash
+sudo apt update && sudo apt install dcmtk -y
+```
 
-## 1. DICOM Client (Sending Data)
+Send any DICOM file to the running pipeline:
 
-In your host machine install `dcmtk` with `sudo apt update && sudo apt install dcmtk -y`.
-This inclueds a **C-STORE SCU** client that can make requests to the ROS2 node.
+```bash
+storescu -v 127.0.0.1 11112 -aec ROS_DICOM_AE <path_to_dicom_file>
+```
 
-### Usage
+### Verify Output
 
-Run the following command to send a single DICOM file (note the `-v` flag for verbose output to confirm success):
-
-`storescu -v 127.0.0.1 11112 -aec ROS_DICOM_AE <path_to_dicom_file>`
-
-
-## 2. ROS 2 Microservices (Processing Data)
-
-The system routes data through 6 specialized nodes, launched via `dicom_nodes.launch.py`:
-
-1. `dicom_server`: Acts as the DICOM Storage SCP (Server). It receives the C-STORE request, parses the DICOM file to extract metadata and pixel data, and broadcasts it as a comprehensive `dicom_interfaces/Dicom` message. This message serves as the central data source for all other processing nodes.
-
-2. `dicom2studyinfo`: Subscribes to the `/dicom_interfaces/Dicom` topic, filters for high-level patient and study metadata, and republishes it as a `dicom_interfaces/StudyInfo` message for easy consumption.
-
-3. `dicom2img`: Subscribes to `/dicom_interfaces/Dicom` and filters for 2D single-frame scans. It publishes the normalized image as a `sensor_msgs/Image` and the corresponding `sensor_msgs/CameraInfo`.
-
-4. `dicom2video`: Subscribes to `/dicom_interfaces/Dicom` and filters for 3D multi-frame volumes. It publishes the sequence of slices as a live ROS video feed (`sensor_msgs/Image` stream) alongside a single `sensor_msgs/CameraInfo`.
-
-5. `dicom2pcl`: Subscribes to `/dicom_interfaces/Dicom` and generates a 3D `sensor_msgs/PointCloud2` from volumetric data using pixel spacing, slice thickness, and intensity thresholding.
-
-6. `dicom2tf`: Subscribes to `/dicom_interfaces/Dicom` and extracts the Image Position and Orientation (Patient) tags. It converts the directional cosines into a quaternion to broadcast the `patient_frame` to `dicom_optical_frame` spatial relationship via `/tf`.
-
-###  Published Topics
-
-| Topic Name | Message Type | Node Origin | Description |
-| :--- | :--- | :--- | :--- |
-| `/dicom_interfaces/Dicom` | `dicom_interfaces/Dicom` | `dicom_server` | A comprehensive message containing pre-parsed metadata and raw pixel data from the DICOM file. Used for internal routing. |
-| `/dicom_study_info` | `dicom_interfaces/StudyInfo` | `dicom2studyinfo` | High-level patient and study metadata (ID, Name, Modality, etc.). |
-| `/dicom_image` | `sensor_msgs/Image` | `dicom2img` | A single 2D image from a single-frame scan (normalized to 8-bit grayscale). |
-| `/dicom_camera_info` | `sensor_msgs/CameraInfo` | `dicom2img` | Camera intrinsics corresponding to `/dicom_image`. |
-| `/dicom_video_frames` | `sensor_msgs/Image` | `dicom2video` | A sequence of 2D image frames from a multi-frame scan. |
-| `/dicom_video_camera_info` | `sensor_msgs/CameraInfo` | `dicom2video` | Camera intrinsics corresponding to the `/dicom_video_frames` stream. |
-| `/dicom_point_cloud` | `sensor_msgs/PointCloud2` | `dicom2pcl` | A 3D point cloud generated from volumetric data, with intensity values. |
-| `/tf` | `tf2_msgs/TFMessage` | `dicom2tf` | Spatial transform from the patient coordinate system to the image frame. |
-
-
-> **Synchronization Note:**  All processed messages generated from the same DICOM file share the exact same header.stamp, allowing downstream nodes to use `message_filters::TimeSynchronizer` to perfectly recombine spatial, visual, and patient data.
-
-
-
-### Image Normalization
-
-DICOM images often come in 12-bit or 16-bit integers with varying ranges. 
-To make them compatible with standard Computer Vision tools (OpenCV/ROS), the imaging nodes perform Min-Max normalization to cast them to `mono8` (uint8):
-
-$$Pixel_{new} = \frac{(Pixel_{raw} - Pixel_{min})}{(Pixel_{max} - Pixel_{min})} \times 255$$
-
-### Metadata and Data Flow
-
-The `dicom_server` node is responsible for parsing the incoming DICOM file. It extracts all necessary metadata—including patient info, study details, and geometric data—and publishes it in a single, comprehensive `dicom_interfaces/Dicom` message.
-
-Downstream nodes subscribe to this topic and use the pre-parsed data:
-* The `dicom2studyinfo` node subscribes to the `Dicom` message and republishes a subset of this information (patient demographics and study details) as a `StudyInfo` message. The fields include:
-  * **Identifiers:** `patient_id`, `patient_name`, `sop_instance_uid`
-  * **Demographics:** `sex`, `age`
-  * **Scan Details:** `modality`, `study_date`, `series_description`
-* The imaging (`dicom2img`, `dicom2video`) and point cloud (`dicom2pcl`) nodes use the geometric data like `pixel_spacing` and `slice_thickness` directly from the `Dicom` message to generate physically accurate `CameraInfo` and `PointCloud2` messages.
-
-### Server Configuration Parameters
-
-The `dicom_server` node operates using the following standard DICOM network parameters:
-
-| Parameter | Default Value | Description |
-| :--- | :--- | :--- |
-| `ae_title` | `ROS_DICOM_AE` | The Application Entity Title for the DICOM Server. |
-| `port` | `11112` | The TCP port to listen for incoming DICOM connections. |
-
-# Verifying Output
-
-To view the data flowing through the pipeline in real-time, execute into the running container:
+Exec into the container to inspect the live topics:
 
 ```bash
 docker exec -it dicom_listener /bin/bash
 source /ros2_ws/install/setup.bash
-```
 
-## View Metadata:
-
-```bash
+# View study metadata
 ros2 topic echo /dicom_study_info
+
+# View all active topics
+ros2 topic list
 ```
 
-## View 2D Images / Video:
-
-From your host machine, ensure X11 forwarding is allowed:
-```bash
-xhost +local:root
-```
-
-Then, launch the ROS image viewer and select `/dicom_image` or `/dicom_video_frames` from the dropdown:
+View images from the host:
 
 ```bash
 ros2 run rqt_image_view rqt_image_view
+# Select /dicom_image or /dicom_video_frames from the dropdown
 ```
 
-## View 3D PointClouds & Transforms:
+3D point clouds and TF transforms are visualized automatically in the RViz2 instance launched by Docker Compose.
 
-The `docker-compose.yml` automatically launches an `RViz2` instance. Once you sent the DICOM image, you should see the render on RViz. 
+### DICOM Server Parameters
+
+| Parameter | Default | Description |
+| :--- | :--- | :--- |
+| `ae_title` | `ROS_DICOM_AE` | DICOM Application Entity Title |
+| `port` | `11112` | TCP port for incoming C-STORE connections |
+
+---
+
+## Test Data
+
+The automated downloader fetches small, freely hosted DICOM samples sufficient for functional verification. For high-resolution clinical rendering (detailed head CTs, torso MRIs), manually place DICOM files into `dicom_samples/` from these sources:
+
+- **[OsiriX DICOM Library](https://www.osirix-viewer.com/resources/dicom-image-library/)** — High-resolution 3D volumes (e.g., MANIX head CTA)
+- **[The Cancer Imaging Archive (TCIA)](https://www.cancerimagingarchive.net/)** — Large-scale real-world clinical datasets
+- **[Siemens MAGNETOM World](https://www.magnetomworld.siemens-healthineers.com/clinical-corner/protocols/dicom-images)** — Clinical-grade MRI from Siemens scanners
+- **[DICOM Library](https://www.dicomlibrary.com/)** — Anonymized pathological examples
+
+--- -->
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, code style guidelines, and commit message conventions.
+
+For bugs and feature requests, open an issue on [GitHub](https://github.com/Ekumen-OS/dicom_to_ros/issues). Security vulnerabilities should be reported privately to <security@ekumenlabs.com>.
+
+---
+
+## License
+
+This project is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+  <sub>Built with care by <a href="https://ekumenlabs.com">Ekumen Labs</a></sub>
+</div>

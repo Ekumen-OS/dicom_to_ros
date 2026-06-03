@@ -18,5 +18,5 @@ jobs:
             source /opt/ros/humble/setup.bash &&
             colcon build &&
             colcon test --event-handlers=console_direct+ &&
-            colcon test-result --summary
+            colcon test-result
           "

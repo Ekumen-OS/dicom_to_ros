@@ -4,9 +4,11 @@ on: [push, pull_request]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-jammy-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ros-tooling/action-ros-ci@v0.3
+      - uses: ros-tooling/action-ros-ci@v0.4
         with:
           target-ros2-distro: humble
           vcs-repo-file-url: ""

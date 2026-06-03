@@ -4,11 +4,19 @@ on: [push, pull_request]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    container:
-      image: rostooling/setup-ros-docker:ubuntu-jammy-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: ros-tooling/action-ros-ci@v0.4
-        with:
-          target-ros2-distro: humble
-          vcs-repo-file-url: ""
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build repository Docker image
+        run: |
+          docker build -t dicom_to_ros:ci -f docker/Dockerfile .
+
+      - name: Run build and tests inside container
+        run: |
+          docker run --rm dicom_to_ros:ci bash -c "
+            source /opt/ros/humble/setup.bash &&
+            colcon build &&
+            colcon test --event-handlers=console_direct+ &&
+            colcon test-result --summary
+          "

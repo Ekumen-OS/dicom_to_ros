@@ -1,0 +1,22 @@
+name: ROS 2 CI
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build repository Docker image
+        run: |
+          docker build -t dicom_to_ros:ci -f docker/Dockerfile.bridge .
+
+      - name: Run build and tests inside container
+        run: |
+          docker run --rm dicom_to_ros:ci bash -c "
+            source /opt/ros/humble/setup.bash &&
+            colcon build &&
+            colcon test --event-handlers=console_direct+ &&
+            colcon test-result
+          "

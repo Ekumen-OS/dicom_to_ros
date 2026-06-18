@@ -44,29 +44,35 @@ This framework is designed to accelerate innovation in **robotic-assisted surger
 
 ```
 dicom_to_ros/
-├── dicom_interfaces/          # Custom ROS 2 message definitions
+├── docker/                        # Core pipeline Docker setup
+│   ├── Dockerfile                 # ROS 2 pipeline image (listener + all nodes)
+│   └── docker-compose.yml         # Runs the dicom_listener container
+├── dicom_interfaces/              # Custom ROS 2 message definitions
 │   └── msg/
-│       ├── Dicom.msg          # Central internal message (metadata + pixel data)
-│       └── StudyInfo.msg      # Patient and study metadata subset
-├── dicom_to_ros/              # Core ROS 2 package — 6 microservice nodes
+│       ├── Dicom.msg              # Central internal message (metadata + pixel data)
+│       └── StudyInfo.msg          # Patient and study metadata subset
+├── dicom_to_ros/                  # Core ROS 2 package — 6 microservice nodes
 │   └── dicom_to_ros/
-│       ├── dicom_server.py    # DICOM SCP listener (entry point)
-│       ├── dicom_2_img.py     # 2D image publisher
-│       ├── dicom_2_video.py   # 3D volume → video stream publisher
-│       ├── dicom_2_pcl.py     # Point cloud publisher
-│       ├── dicom_2_tf.py      # TF transform publisher
+│       ├── dicom_server.py        # DICOM SCP listener (entry point)
+│       ├── dicom_2_img.py         # 2D image publisher
+│       ├── dicom_2_video.py       # 3D volume → video stream publisher
+│       ├── dicom_2_pcl.py         # Point cloud publisher
+│       ├── dicom_2_tf.py          # TF transform publisher
 │       ├── dicom_2_study_info.py  # Study metadata publisher
-│       └── dicom_utils.py     # Shared utilities
-├── dicom_to_ros_demo/         # Docker-based demo environment
-│   ├── docker/
-│   │   ├── docker-compose.yml
-│   │   ├── Dockerfile.bridge
-│   │   └── Dockerfile.downloader
-│   ├── rviz_config/           # Pre-configured RViz2 layout
+│       └── dicom_utils.py         # Shared utilities
+├── dicom_to_ros_demo/             # Demo environment
+│   ├── dicom_samples/             # DICOM test data (auto-downloaded on first run)
+│   │   ├── 2D/
+│   │   └── 3D/
+│   ├── docker/                    # Demo-specific Docker setup
+│   │   ├── Dockerfile.downloader  # Sample downloader image
+│   │   ├── Dockerfile.rviz        # RViz2 visualization image
+│   │   └── docker-compose.yml     # Orchestrates downloader + RViz2
+│   ├── rviz_config/               # Pre-configured RViz2 layout
 │   └── test_data_utils/
-│       └── download_samples.py
+│       └── download_samples.py    # Script to fetch public DICOM samples
 └── doc/
-    └── dicom_to_ros.png
+    └── workflow_dicom.png
 ```
 
 ---
@@ -116,73 +122,47 @@ DICOM Client (storescu)
 
 > **Synchronization:** All messages produced from a single DICOM file share the same `header.stamp`, making them compatible with `message_filters::TimeSynchronizer` for exact alignment of spatial, visual, and clinical data.
 
-<!-- ### Image Normalization
+### Image Normalization
 
-DICOM images are typically 12-bit or 16-bit integers. The pipeline normalizes them to `mono8` (uint8) for compatibility with standard ROS 2 computer vision tooling:
+DICOM images often come in 12-bit or 16-bit integers with varying ranges. 
+To make them compatible with standard Computer Vision tools (OpenCV/ROS), the imaging nodes perform Min-Max normalization to cast them to `mono8` (uint8):
 
-$$Pixel_{new} = \frac{(Pixel_{raw} - Pixel_{min})}{(Pixel_{max} - Pixel_{min})} \times 255$$ -->
+$$Pixel_{new} = \frac{(Pixel_{raw} - Pixel_{min})}{(Pixel_{max} - Pixel_{min})} \times 255$$
+
+### Metadata and Data Flow
+
+The `dicom_server` node is responsible for parsing the incoming DICOM file. It extracts all necessary metadata—including patient info, study details, and geometric data—and publishes it in a single, comprehensive `dicom_interfaces/Dicom` message.
+
+Downstream nodes subscribe to this topic and use the pre-parsed data:
+* The `dicom2studyinfo` node subscribes to the `Dicom` message and republishes a subset of this information (patient demographics and study details) as a `StudyInfo` message. The fields include:
+  * **Identifiers:** `patient_id`, `patient_name`, `sop_instance_uid`
+  * **Demographics:** `sex`, `age`
+  * **Scan Details:** `modality`, `study_date`, `series_description`
+* The imaging (`dicom2img`, `dicom2video`) and point cloud (`dicom2pcl`) nodes use the geometric data like `pixel_spacing` and `slice_thickness` directly from the `Dicom` message to generate physically accurate `CameraInfo` and `PointCloud2` messages.
+
 
 ---
 
-<!-- ## Quick Start (Docker)
+## Quick Start (Docker)
 
 ### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/)
 - A Linux host with X11 (for RViz2 visualization)
 
-### Run the Demo
+### Running the Core Pipeline
+
+The `docker/` directory runs the ROS 2 DICOM listener and all processing nodes. It mounts the `dicom_interfaces` and `dicom_to_ros` packages from the repo root into the container workspace.
 
 ```bash
 git clone https://github.com/Ekumen-OS/dicom_to_ros.git
-cd dicom_to_ros/dicom_to_ros_demo
+cd dicom_to_ros
 
-# Allow X11 connections from Docker
-xhost +local:root
-
-# Build and start the full pipeline (DICOM listener + RViz2)
-docker compose up --build -d
+export GID=$(id -g)
+docker compose -f docker/docker-compose.yml up --build -d
 ```
 
-On first run, a `sample_downloader` service automatically downloads and organizes sample DICOM files into `dicom_samples/2D/CT/`, `dicom_samples/3D/MRI/`, etc. The pipeline starts immediately after and listens for DICOM connections on port `11112`.
-
-### Send a DICOM File
-
-Install `dcmtk` on your host machine:
-
-```bash
-sudo apt update && sudo apt install dcmtk -y
-```
-
-Send any DICOM file to the running pipeline:
-
-```bash
-storescu -v 127.0.0.1 11112 -aec ROS_DICOM_AE <path_to_dicom_file>
-```
-
-### Verify Output
-
-Exec into the container to inspect the live topics:
-
-```bash
-docker exec -it dicom_listener /bin/bash
-source /ros2_ws/install/setup.bash
-
-# View study metadata
-ros2 topic echo /dicom_study_info
-
-# View all active topics
-ros2 topic list
-```
-
-View images from the host:
-
-```bash
-ros2 run rqt_image_view rqt_image_view
-# Select /dicom_image or /dicom_video_frames from the dropdown
-```
-
-3D point clouds and TF transforms are visualized automatically in the RViz2 instance launched by Docker Compose.
+The pipeline starts immediately and listens for DICOM C-STORE requests on port `11112`.
 
 ### DICOM Server Parameters
 
@@ -193,16 +173,11 @@ ros2 run rqt_image_view rqt_image_view
 
 ---
 
-## Test Data
+## Demo
 
-The automated downloader fetches small, freely hosted DICOM samples sufficient for functional verification. For high-resolution clinical rendering (detailed head CTs, torso MRIs), manually place DICOM files into `dicom_samples/` from these sources:
+For a more detailed demo, please check the [dicom_to_ros_demo](dicom_to_ros_demo/README.md) folder.
 
-- **[OsiriX DICOM Library](https://www.osirix-viewer.com/resources/dicom-image-library/)** — High-resolution 3D volumes (e.g., MANIX head CTA)
-- **[The Cancer Imaging Archive (TCIA)](https://www.cancerimagingarchive.net/)** — Large-scale real-world clinical datasets
-- **[Siemens MAGNETOM World](https://www.magnetomworld.siemens-healthineers.com/clinical-corner/protocols/dicom-images)** — Clinical-grade MRI from Siemens scanners
-- **[DICOM Library](https://www.dicomlibrary.com/)** — Anonymized pathological examples
-
---- -->
+---
 
 ## Contributing
 
@@ -219,5 +194,5 @@ This project is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE
 ---
 
 <div align="center">
-  <sub>Built with care by <a href="https://ekumenlabs.com">Ekumen Labs</a></sub>
+  <sub>by <a href="https://ekumenlabs.com">Ekumen Labs</a></sub>
 </div>

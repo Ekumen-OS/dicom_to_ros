@@ -2,38 +2,24 @@ services:
   sample_downloader:
     build:
       context: .
-      dockerfile: docker/Dockerfile.downloader
+      dockerfile: Dockerfile.downloader
     container_name: dicom_sample_downloader
     volumes:
-      - ./dicom_samples:/app/dicom_samples
+      - ../dicom_samples:/app/dicom_samples
+      - ../test_data_utils/download_samples.py:/app/download_samples.py
+    network_mode: host
     command: python3 download_samples.py
 
-  dicom_listener:
+  rviz:
     build:
       context: .
-      dockerfile: docker/Dockerfile.bridge
-    image: dicom_ros_image
-    container_name: dicom_listener
+      dockerfile: Dockerfile.rviz
+      args:
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: dicom_rviz
     depends_on:
-      sample_downloader:
-        condition: service_completed_successfully
-    network_mode: host
-    ipc: host
-    environment:
-      - DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1 
-      
-    volumes:
-      - ./src:/ros2_ws/src
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw 
-      
-    command: /bin/bash -c "rm -rf build install log && source /opt/ros/humble/setup.bash && colcon build --symlink-install && source install/setup.bash && ros2 launch dicom_to_ros dicom_nodes.launch.py"
-
-  rviz:
-    image: dicom_ros_image
-    container_name: dicom_rviz_pcl
-    depends_on:
-      - dicom_listener
+      - sample_downloader
     environment:
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1
@@ -42,7 +28,8 @@ services:
     volumes:
       - ./src:/ros2_ws/src
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - ./rviz_config:/root/.rviz2
+      - ../rviz_config:/dicom_rviz/rviz_config
+      - /dev/dri:/dev/dri:ro
     network_mode: host
     ipc: host
     deploy:
@@ -52,4 +39,4 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu, utility, compute, graphics, video]
-    command: /bin/bash -c "source /opt/ros/humble/setup.bash && ros2 run rviz2 rviz2"
+    command: /bin/bash -c "rviz2 -d /dicom_rviz/rviz_config/default.rviz"

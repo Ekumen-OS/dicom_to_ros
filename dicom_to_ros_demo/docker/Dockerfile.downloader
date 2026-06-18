@@ -1,0 +1,10 @@
+# Use a slim python image to keep the image lightweight
+FROM python:3.10-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Install Python dependencies required for the download script
+RUN pip install requests pydicom "numpy<2" pylibjpeg pylibjpeg-libjpeg pylibjpeg-openjpeg
+
+# The command to run the script is specified in the docker-compose.yml

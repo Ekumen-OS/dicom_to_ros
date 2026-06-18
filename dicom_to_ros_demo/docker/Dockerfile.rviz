@@ -1,0 +1,28 @@
+FROM ros:humble-ros-base
+
+# 1. Install System Dependencies
+# net-tools and iputils-ping are for debugging network issues
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    ros-humble-cv-bridge \
+    ros-humble-sensor-msgs-py \
+    ros-humble-rqt-image-view \ 
+    ros-humble-rqt-graph \
+    ros-humble-rviz2 \
+    ros-humble-rviz-common \
+    ros-humble-rviz-default-plugins \
+    net-tools \
+    iputils-ping \
+    x11-apps \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Create user matching host UID/GID
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN groupadd --gid ${GROUP_ID} appuser && \
+    useradd --uid ${USER_ID} --gid ${GROUP_ID} -m -s /bin/bash appuser && \
+    mkdir -p /ros2_ws && chown ${USER_ID}:${GROUP_ID} /ros2_ws
+
+USER appuser
+
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc

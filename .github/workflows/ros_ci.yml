@@ -10,7 +10,7 @@ jobs:
 
       - name: Build repository Docker image
         run: |
-          docker build -t dicom_to_ros:ci -f docker/Dockerfile.bridge .
+          docker build -t dicom_to_ros:ci -f docker/Dockerfile .
 
       - name: Run build and tests inside container
         run: |

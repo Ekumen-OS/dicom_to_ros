@@ -1,0 +1,43 @@
+services:
+  sample_downloader:
+    build:
+      context: .
+      dockerfile: Dockerfile.downloader
+    container_name: dicom_sample_downloader
+    volumes:
+      - ../dicom_samples:/app/dicom_samples
+      - ../test_data_utils/download_samples.py:/app/download_samples.py
+    network_mode: host
+    command: python3 download_samples.py
+
+  rviz:
+    build:
+      context: .
+      dockerfile: Dockerfile.rviz
+      args:
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: dicom_rviz
+    depends_on:
+      - sample_downloader
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - ./src:/ros2_ws/src
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ../rviz_config:/dicom_rviz/rviz_config
+      - /dev/dri:/dev/dri:ro
+    network_mode: host
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, utility, compute, graphics, video]
+    command: /bin/bash -c "rviz2 -d /dicom_rviz/rviz_config/default.rviz"
+    

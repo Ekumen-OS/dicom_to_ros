@@ -1,0 +1,23 @@
+services:
+  dicom_listener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    image: dicom_ros_image
+    container_name: dicom_listener
+    network_mode: host
+    ipc: host
+    pid: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+
+    volumes:
+      - ../dicom_interfaces:/ros2_ws/src/dicom_interfaces
+      - ../dicom_to_ros:/ros2_ws/src/dicom_to_ros
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      
+    command: /bin/bash -c "rm -rf build install log && source /opt/ros/humble/setup.bash && colcon build --symlink-install && source install/setup.bash && ros2 launch dicom_to_ros dicom_nodes.launch.py"

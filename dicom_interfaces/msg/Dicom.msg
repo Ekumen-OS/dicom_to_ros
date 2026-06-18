@@ -1,0 +1,17 @@
+std_msgs/Header header
+string sop_instance_uid
+string modality
+string patient_id
+string patient_name
+string sex
+string age
+string study_date
+string series_description
+float32[2] pixel_spacing
+float32 slice_thickness
+float32[3] image_position
+float32[6] image_orientation
+uint32 rows
+uint32 columns
+string pixel_dtype
+uint8[] pixel_data

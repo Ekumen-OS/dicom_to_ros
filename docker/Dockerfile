@@ -32,4 +32,3 @@ USER appuser
 WORKDIR /ros2_ws
 
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-

@@ -49,13 +49,11 @@ The downloaded sample files are available on the host at `dicom_to_ros_demo/dico
 
 ```bash
 # Send a 2D scan
-storescu -v 127.0.0.1 11112 -aec ROS_DICOM_AE dicom_to_ros_demo/dicom_samples/2D/CT/
+storescu -v 127.0.0.1 11112 -aec ROS_DICOM_AE dicom_to_ros_demo/dicom_samples/2D/CT/native_2d_ct_slice.dcm
 
 # Send a 3D volume
-storescu -v 127.0.0.1 11112 -aec ROS_DICOM_AE dicom_to_ros_demo/dicom_samples/3D/MRI/
+storescu -v 127.0.0.1 11112 -aec ROS_DICOM_AE dicom_to_ros_demo/dicom_samples/3D/MRI/native_3d_mri_cardiac.dcm
 ```
-
-`storescu` can send an entire directory — it will transmit each `.dcm` file in sequence.
 
 ## Visualizing Data
 

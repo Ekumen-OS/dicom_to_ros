@@ -189,7 +189,7 @@ For bugs and feature requests, open an issue on [GitHub](https://github.com/Ekum
 
 ## License
 
-This project is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+This project is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE.txt) for details.
 
 ---
 

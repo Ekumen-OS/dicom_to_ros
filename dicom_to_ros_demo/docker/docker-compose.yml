@@ -40,3 +40,4 @@ services:
               count: 1
               capabilities: [gpu, utility, compute, graphics, video]
     command: /bin/bash -c "rviz2 -d /dicom_rviz/rviz_config/default.rviz"
+    

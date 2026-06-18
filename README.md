@@ -52,27 +52,36 @@ dicom_to_ros/
 │       ├── Dicom.msg              # Central internal message (metadata + pixel data)
 │       └── StudyInfo.msg          # Patient and study metadata subset
 ├── dicom_to_ros/                  # Core ROS 2 package — 6 microservice nodes
-│   └── dicom_to_ros/
-│       ├── dicom_server.py        # DICOM SCP listener (entry point)
-│       ├── dicom_2_img.py         # 2D image publisher
-│       ├── dicom_2_video.py       # 3D volume → video stream publisher
-│       ├── dicom_2_pcl.py         # Point cloud publisher
-│       ├── dicom_2_tf.py          # TF transform publisher
-│       ├── dicom_2_study_info.py  # Study metadata publisher
-│       └── dicom_utils.py         # Shared utilities
+│   ├── dicom_to_ros/
+│   │   ├── dicom_server.py        # DICOM SCP listener (entry point)
+│   │   ├── dicom_2_img.py         # 2D image publisher
+│   │   ├── dicom_2_video.py       # 3D volume → video stream publisher
+│   │   ├── dicom_2_pcl.py         # Point cloud publisher
+│   │   ├── dicom_2_tf.py          # TF transform publisher
+│   │   ├── dicom_2_study_info.py  # Study metadata publisher
+│   │   └── dicom_utils.py         # Shared utilities
+│   ├── launch/
+│   │   └── dicom_nodes.launch.py
+│   └── test/                      # Unit tests per node
 ├── dicom_to_ros_demo/             # Demo environment
 │   ├── dicom_samples/             # DICOM test data (auto-downloaded on first run)
 │   │   ├── 2D/
+│   │   │   ├── CT/
+│   │   │   └── MRI/
 │   │   └── 3D/
+│   │       ├── MRI/
+│   │       └── US/
 │   ├── docker/                    # Demo-specific Docker setup
 │   │   ├── Dockerfile.downloader  # Sample downloader image
 │   │   ├── Dockerfile.rviz        # RViz2 visualization image
 │   │   └── docker-compose.yml     # Orchestrates downloader + RViz2
 │   ├── rviz_config/               # Pre-configured RViz2 layout
+│   │   └── default.rviz
 │   └── test_data_utils/
 │       └── download_samples.py    # Script to fetch public DICOM samples
 └── doc/
-    └── workflow_dicom.png
+    ├── dicom_to_ros.png
+    └── video_preview.png
 ```
 
 ---

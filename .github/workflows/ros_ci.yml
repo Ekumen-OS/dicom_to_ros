@@ -15,7 +15,7 @@ jobs:
       - name: Run build and tests inside container
         run: |
           docker run --rm dicom_to_ros:ci bash -c "
-            source /opt/ros/humble/setup.bash &&
+            source /opt/ros/jazzy/setup.bash &&
             colcon build &&
             colcon test --event-handlers=console_direct+ &&
             colcon test-result

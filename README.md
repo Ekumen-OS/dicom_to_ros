@@ -4,7 +4,7 @@
   <p><em>A fully containerized, open-source bridge between medical imaging and robotics.</em></p>
 
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-  [![ROS 2](https://img.shields.io/badge/ROS%202-Humble-brightgreen)](https://docs.ros.org/en/humble/)
+  [![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-brightgreen)](https://docs.ros.org/en/jazzy/)
   [![ISO 12052](https://img.shields.io/badge/DICOM-ISO%2012052-orange)](https://www.dicomstandard.org/)
 </div>
 

@@ -1,34 +1,38 @@
-FROM ros:humble-ros-base
+FROM ros:jazzy-ros-base
 
 # 1. Install System Dependencies
 # net-tools and iputils-ping are for debugging network issues
 RUN apt-get update && apt-get install -y \
     python3-pip \
-    ros-humble-cv-bridge \
-    ros-humble-sensor-msgs-py \
-    ros-humble-rqt-image-view \ 
-    ros-humble-rqt-graph \
-    ros-humble-rviz2 \
-    ros-humble-rviz-common \
-    ros-humble-rviz-default-plugins \
+    ros-jazzy-cv-bridge \
+    ros-jazzy-sensor-msgs-py \
+    ros-jazzy-rqt-image-view \ 
+    ros-jazzy-rqt-graph \
+    ros-jazzy-rviz2 \
+    ros-jazzy-rviz-common \
+    ros-jazzy-rviz-default-plugins \
     net-tools \
     iputils-ping \
     x11-apps \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Install Python Dependencies for DICOM
-RUN pip install pydicom pynetdicom "numpy<2" opencv-python-headless gdcm pylibjpeg pyjpegls scipy
+RUN pip install pydicom pynetdicom "numpy<2" opencv-python-headless gdcm pylibjpeg pyjpegls scipy --break-system-packages
 
 # 3. Create user matching host UID/GID
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-RUN groupadd --gid ${GROUP_ID} appuser && \
-    useradd --uid ${USER_ID} --gid ${GROUP_ID} -m -s /bin/bash appuser && \
+RUN if ! getent group ${GROUP_ID} > /dev/null 2>&1; then \
+        groupadd --gid ${GROUP_ID} appuser; \
+    fi && \
+    if ! getent passwd ${USER_ID} > /dev/null 2>&1; then \
+        useradd --uid ${USER_ID} --gid ${GROUP_ID} -m -s /bin/bash appuser; \
+    fi && \
     mkdir -p /ros2_ws && chown ${USER_ID}:${GROUP_ID} /ros2_ws
 
-USER appuser
+USER ${USER_ID}:${GROUP_ID}
 
 # 4. Setup Workspace
 WORKDIR /ros2_ws
 
-RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
